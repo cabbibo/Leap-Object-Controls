@@ -84,8 +84,8 @@
 			uniform sampler2D texture1;
 			uniform sampler2D texture2;
 
-			const float width = 96.0;
-			const float height = 96.0;
+			const float width = 64.0;
+			const float height = 64.0;
       const float dt = 0.9;
 
 			const float PI = 3.141592653589793;
@@ -146,7 +146,7 @@
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
 
-			var WIDTH = 96;
+			var WIDTH = 64;
 			var HEIGHT = WIDTH;
 			var PARTICLES = WIDTH * WIDTH;
 			var BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2;
@@ -190,9 +190,6 @@
       			texture1: { type: "t", value: null },
       			texture2: { type: "t", value: null },
       		},
-					transparent: true,
-					blending: THREE.NoBlending,
-					depthWrite: false, depthTest: false,
       		vertexShader: document.getElementById( 'vertexShader' ).textContent,
       		fragmentShader: document.getElementById( 'fragmentShaderVelocity' ).textContent
       	});
@@ -246,14 +243,14 @@
 							THREE.ShaderChunk[ "color_vertex" ],
 
 
-							"vec2 lookupuv = position.xy + vec2( 0.5 / 96.0, 0.5 / 96.0 );",
+							"vec2 lookupuv = position.xy + vec2( 0.5 / 64.0, 0.5 / 64.0 );",
 							"vec4 pos = texture2D( lookup, lookupuv );",
 
 
 							"vec4 mvPosition = modelViewMatrix * vec4( pos.xyz, 1.0 );",
 
 							"#ifdef USE_SIZEATTENUATION",
-								"gl_PointSize = size * pos.a * ( scale / length( mvPosition.xyz ) );",
+								"gl_PointSize = size * ( scale / length( mvPosition.xyz ) );",
 							"#else",
 								"gl_PointSize = size;",
 							"#endif",
@@ -297,11 +294,11 @@
 				};
 
 
-				material = new THREE.ParticleBasicMaterial( { size: 50, vertexColors: false,
-					map: THREE.ImageUtils.loadTexture( '../lib/flare.png' ),
-					transparent: true,
-					blending: THREE.AdditiveBlending,
-					depthWrite: false, depthTest: false,
+				material = new THREE.ParticleBasicMaterial( { size: 10, vertexColors: false,
+					map: THREE.ImageUtils.loadTexture( '../lib/round.png' ),
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false, depthTest: false,
 					uniforms: {
 						'color': {}
 					}
