@@ -1,0 +1,519 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - gpgpu - flocking</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				text-align:center;
+				cursor: pointer;
+
+
+			}
+
+			a {
+				color:#0078ff;
+			}
+
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+			}
+
+		</style>
+
+	</head>
+	<body>
+
+		<script src="../lib/three.js"></script>
+
+		<script src="../lib/Detector.js"></script>
+		<script src="../lib/stats.min.js"></script>
+		<script src="../lib/dat.gui.min.js"></script>
+
+		<!-- pass through shaders -->
+		<script id="vertexShader" type="x-shader/x-vertex">
+
+			void main()	{
+
+				gl_Position = vec4( position, 1.0 );
+
+			}
+
+		</script>
+
+		<script id="fragmentShader" type="x-shader/x-fragment">
+
+			uniform vec2 resolution;
+			uniform float time;
+			uniform sampler2D texture;
+
+			void main()	{
+
+				vec2 uv = gl_FragCoord.xy / resolution.xy;
+
+				gl_FragColor = texture2D( texture, uv );
+
+			}
+
+		</script>
+		<!-- end pass through shaders -->
+
+		<script id="fragmentShaderVelocity" type="x-shader/x-fragment">
+
+			uniform vec2 resolution;
+			uniform float time;
+			uniform float testing;
+			// uniform float delta;
+			uniform float seperationDistance; // 10
+			uniform float alignmentDistance; // 40
+			uniform float cohesionDistance; // 200
+			uniform float freedomFactor;
+
+
+			uniform sampler2D texture1;
+			uniform sampler2D texture2;
+
+			const float width = 96.0;
+			const float height = 96.0;
+      const float dt = 0.9;
+
+			const float PI = 3.141592653589793;
+			const float PI_2 = 3.141592653589793 * 2.0;
+			const float VISION = PI * 0.55;
+
+			const float UPPER_BOUNDS = 200.0;
+			const float LOWER_BOUNDS = -UPPER_BOUNDS;
+
+			float rand(vec2 co){
+			    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+			}
+
+			void main()	{
+
+				vec2 uv = gl_FragCoord.xy / resolution.xy;
+
+				// int x, y;
+				vec4 otherPosition;
+				vec4 selfPosition = texture2D( texture2, uv );
+				vec3 selfVelocity = selfPosition.xyz - texture2D( texture1, uv ).xyz;
+
+				float dist;
+				vec3 diff;
+        
+        for (float y=0.0;y<height;y++) {
+          for (float x=0.0;x<width;x++) {
+            if (x == gl_FragCoord.x && y == gl_FragCoord.y) continue;
+                    
+            otherPosition = texture2D( texture2, vec2(x/resolution.x, y/resolution.y) );
+        
+        
+            diff = otherPosition.xyz - selfPosition.xyz;
+            dist = length(diff);
+            selfVelocity += (normalize(diff) * otherPosition.a / (dist * dist + 1.0)) * dt * dt;
+          }
+        }
+        
+        vec3 position = selfPosition.xyz + selfVelocity * dt;
+				gl_FragColor = vec4(position, selfPosition.a);
+			}
+
+		</script>
+
+
+    <script src="../lib/leap.min.js"></script>
+    <script src="../src/LeapClutchControls.js"></script>
+		<script src="../lib/SimulatorRenderer.js"></script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats;
+			var camera, scene, renderer, particles, geometry, simulatorMaterial, parameters, i, h, color;
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var WIDTH = 96;
+			var HEIGHT = WIDTH;
+			var PARTICLES = WIDTH * WIDTH;
+			var BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2;
+
+			var debug;
+			var data, texture;
+
+			console.log('total', PARTICLES);
+
+			var simulator;
+			var flipflop = 0;
+			var rt0, rt1, rt2;
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.z = 1000;
+
+				scene = new THREE.Scene();
+        world = new THREE.Object3D();
+        scene.add(world);
+        
+        controller = new Leap.Controller();
+        controls = new THREE.LeapClutchControls( world , controller );
+        controller.connect();
+
+				geometry = getBufferParticleGeometry();
+
+      	simulatorMaterial = new THREE.ShaderMaterial( {
+
+      		uniforms: {
+      			time: { type: "f", value: 1.0 },
+      			resolution: { type: "v2", value: new THREE.Vector2(WIDTH, WIDTH) },
+      			texture1: { type: "t", value: null },
+      			texture2: { type: "t", value: null },
+      		},
+					transparent: true,
+					blending: THREE.NoBlending,
+					depthWrite: false, depthTest: false,
+      		vertexShader: document.getElementById( 'vertexShader' ).textContent,
+      		fragmentShader: document.getElementById( 'fragmentShaderVelocity' ).textContent
+      	});
+
+				renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor(0, 0);
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				////////
+				simulator = new SimulatorRenderer(WIDTH, renderer);
+        
+				rt0 = simulator.getRenderTarget();
+				rt1 = rt0.clone();
+				rt2 = rt0.clone();
+
+				simulator.copyTexture(generateDataTexture(0), rt0);
+				simulator.copyTexture(generateDataTexture(100), rt1);
+        // simulator.copyTexture(initialData, rt2);
+
+				/////////
+
+				// Particle material
+
+
+				particle_basic = THREE.ShaderLib['particle_basic'] = {
+
+					uniforms:  THREE.UniformsUtils.merge( [
+
+						{
+							"lookup": { type: "t", value: null }
+						},
+						THREE.UniformsLib[ "particle" ],
+						THREE.UniformsLib[ "shadowmap" ],
+					] ),
+
+					vertexShader: [
+
+
+						"uniform sampler2D lookup;",
+
+						"uniform float size;",
+						"uniform float scale;",
+						"varying float mass;",
+
+            // THREE.ShaderChunk[ "color_pars_vertex" ],
+            // THREE.ShaderChunk[ "shadowmap_pars_vertex" ],
+
+						"void main() {",
+
+							THREE.ShaderChunk[ "color_vertex" ],
+
+
+							"vec2 lookupuv = position.xy + vec2( 0.5 / 96.0, 0.5 / 96.0 );",
+							"vec4 pos = texture2D( lookup, lookupuv );",
+
+
+							"vec4 mvPosition = modelViewMatrix * vec4( pos.xyz, 1.0 );",
+
+							"#ifdef USE_SIZEATTENUATION",
+								"gl_PointSize = size * pos.a * ( scale / length( mvPosition.xyz ) );",
+							"#else",
+								"gl_PointSize = size;",
+							"#endif",
+              
+              "mass = pos.a;",
+
+							"gl_Position = projectionMatrix * mvPosition;",
+
+              // THREE.ShaderChunk[ "worldpos_vertex" ],
+              // THREE.ShaderChunk[ "shadowmap_vertex" ],
+
+						"}"
+
+					].join("\n"),
+
+					fragmentShader: [
+
+						"uniform vec3 psColor;",
+						"uniform float opacity;",
+						"varying float mass;",
+
+            // THREE.ShaderChunk[ "color_pars_fragment" ],
+            THREE.ShaderChunk[ "map_particle_pars_fragment" ],
+            // THREE.ShaderChunk[ "fog_pars_fragment" ],
+            // THREE.ShaderChunk[ "shadowmap_pars_fragment" ],
+
+						"void main() {",
+
+							"gl_FragColor = vec4(1.0 - mass, 0.2, mass, 1.0);",
+
+              THREE.ShaderChunk[ "map_particle_fragment" ],
+              // THREE.ShaderChunk[ "alphatest_fragment" ],
+              // THREE.ShaderChunk[ "color_fragment" ],
+              // THREE.ShaderChunk[ "shadowmap_fragment" ],
+              // THREE.ShaderChunk[ "fog_fragment" ],
+
+						"}"
+
+					].join("\n")
+
+				};
+
+
+				material = new THREE.ParticleBasicMaterial( { size: 50, vertexColors: false,
+					map: THREE.ImageUtils.loadTexture( '../lib/flare.png' ),
+					transparent: true,
+					blending: THREE.AdditiveBlending,
+					depthWrite: false, depthTest: false,
+					uniforms: {
+						'color': {}
+					}
+				} );
+				console.log(material);
+
+				// material.map = rt1;
+				particle_basic.uniforms.lookup.value = rt1;
+				// material.uniforms.lookup.value = rt1;
+
+				particles = new THREE.ParticleSystem( geometry, material );
+				world.add( particles );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+        window.addEventListener('keydown', function (e) {
+          console.log(e.keyCode);
+          switch(e.keyCode) {
+          case 37:
+            break;
+          case 38:
+            break;
+          case 39:
+            break;
+          case 40:
+            break;
+          }
+        }, false);
+
+
+				var gui = new dat.GUI();
+
+
+				var effectController = {
+					seperation: 20.0,
+					alignment: 20.0,
+					cohesion: 45.0,
+					freedom: 0.75
+				};
+
+				var valuesChanger = function() {
+          // 
+          // simulator.velocityUniforms.seperationDistance.value = effectController.seperation;
+          // simulator.velocityUniforms.alignmentDistance.value = effectController.alignment;
+          // simulator.velocityUniforms.cohesionDistance.value = effectController.cohesion;
+          // simulator.velocityUniforms.freedomFactor.value = effectController.freedom;
+
+				};
+
+				valuesChanger();
+
+
+				gui.add( effectController, "seperation", 0.0, 200.0, 1.0 ).onChange( valuesChanger );
+				gui.add( effectController, "alignment", 0.0, 80, 0.001 ).onChange( valuesChanger );
+				gui.add( effectController, "cohesion", 0.0, 1000, 0.025 ).onChange( valuesChanger );
+				gui.add( effectController, "freedom", 0.0, 1.0, 0.025 ).onChange( valuesChanger );
+        gui.close();
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+        requestAnimationFrame( animate );
+        // setTimeout(animate, 1000);
+
+				render();
+				stats.update();
+
+			}
+
+			var timer = 0;
+
+			function render() {
+
+				timer += 0.01;
+
+				// simulationShader.uniforms.timer.value = timer;
+
+				var debugTime = false && Math.random() < 0.1;
+
+				debugTime && console.time('simulate');
+
+        switch(flipflop) {
+        case 0:
+          simulator.renderStep(simulatorMaterial, rt0, rt1, rt2);
+					if (material.uniforms)
+					material.uniforms.lookup.value = rt2;
+          break;
+        case 1:
+          simulator.renderStep(simulatorMaterial, rt1, rt2, rt0);
+					if (material.uniforms)
+					material.uniforms.lookup.value = rt0;
+          break;
+        case 2:
+          simulator.renderStep(simulatorMaterial, rt2, rt0, rt1);
+					if (material.uniforms)
+					material.uniforms.lookup.value = rt1;
+          break;
+        }
+        // console.log(flipflop)
+
+				flipflop = (flipflop+1) % 3;
+
+				debugTime && console.timeEnd('simulate');
+
+        controls.update();
+
+				var time = Date.now() * 0.00005;
+
+				camera.position.x += ( mouseX - camera.position.x ) * 0.05;
+				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+
+				camera.lookAt( scene.position );
+
+				debugTime && console.time('render');
+
+				renderer.render( scene, camera );
+
+				debugTime && console.timeEnd('render');
+
+			}
+
+			function generateDataTexture(R) {
+
+				var x, y, z;
+
+				var w = WIDTH, h = WIDTH;
+
+				var a = new Float32Array(PARTICLES * 4);
+
+				for (var k = 0; k < PARTICLES; k++) {
+
+					x = Math.random() * 2 - 1;
+					y = Math.random() * 2 - 1;
+					z = Math.random() * 2 - 1;
+          
+          var d = R * Math.pow(Math.random(), 1/3) / Math.sqrt(x*x + y*y + z*z);
+
+					a[ k*4 + 0 ] = x*d;
+					a[ k*4 + 1 ] = y*d;
+					a[ k*4 + 2 ] = z*d;
+          // a[ k*4 + 3 ] = 1;
+          a[ k*4 + 3 ] = Math.random() * 0.99 + 0.01;
+				}
+
+				var texture = new THREE.DataTexture( a, WIDTH, WIDTH, THREE.RGBAFormat, THREE.FloatType );
+				texture.minFilter = THREE.NearestFilter;
+				texture.magFilter = THREE.NearestFilter;
+				texture.needsUpdate = true;
+				texture.flipY = false;
+				console.log(texture);
+
+				return texture;
+
+			}
+
+
+			function getBufferParticleGeometry() {
+
+				var particles = PARTICLES;
+
+				var geometry = new THREE.BufferGeometry();
+				geometry.attributes = {
+
+					position: {
+						itemSize: 3,
+						array: new Float32Array( particles * 3 ),
+						numItems: particles * 3
+					}
+				}
+
+				var positions = geometry.attributes.position.array;
+				var n = 1000, n2 = n / 2; // particles spread in the cube
+
+				for ( var i = 0; i < positions.length; i += 3 ) {
+					var j = ~~(i / 3);
+
+					// positions
+
+					var x = ( j % WIDTH ) / WIDTH ;
+					var y = Math.floor( j / WIDTH ) / HEIGHT;
+					var z = Math.random() * n - n2;
+
+					positions[ i ]     = x;
+					positions[ i + 1 ] = y;
+					positions[ i + 2 ] = z;
+
+				}
+
+				geometry.computeBoundingSphere();
+				return geometry;
+			}
+
+
+		</script>
+	</body>
+</html>

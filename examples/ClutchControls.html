@@ -18,7 +18,7 @@
   <div id="container"></div>
   <script src="../lib/three.js"></script>
   <script src="../lib/leap.min.js"></script>
-  <script src="../controls/LeapClutchControls.js"></script>
+  <script src="../src/LeapClutchControls.js"></script>
     
   <script>
 
@@ -26,28 +26,96 @@
 
   var controller , controls;
 
+  loadHandModels();
+
   init();
   animate();
+  
+  var leftHand, rightHand;
+  function loadHandModels() {
+    var loader = new THREE.JSONLoader();
+    loader.load('../lib/left_hand.json', function (geometry, materials) {
+      leftHand = new THREE.SkinnedMesh(geometry, materials[0]);
+      scene.add(leftHand);
+      console.log('left hand loaded', geometry, materials);
+    });
+    
+    loader.load('../lib/right_hand.json', function (geometry, materials) {
+      rightHand = new THREE.SkinnedMesh(geometry, materials[0]);
+      scene.add(rightHand);
+      console.log('right hand loaded', geometry, materials);
+    });
+  }
+  
+  var m1 = new THREE.Matrix4();
+  var m2 = new THREE.Matrix4();
+
+  var zeroVector = new THREE.Vector3(0, 0, 0);
+  var direction = new THREE.Vector3(0, 0, 0);
+  var up = new THREE.Vector3(0, 0, 0);
+  function updateHands() {
+    var frame = controller.frame();
+    if (!frame.valid) return;
+    
+    var box = frame.interactionBox;
+    var lh, rh;
+    frame.hands.forEach(function (h) {
+      if (h.type == 'left') {
+        lh = h;
+      } else if (h.type == 'right') {
+        rh = h;
+      }
+    });
+    
+    updateHand(box, leftHand, lh);
+    updateHand(box, rightHand, rh);
+  }
+  
+  var vec4 = new THREE.Vector3();
+  function updateHand(box, mesh, hand) {
+    if (!hand) {
+      if (mesh) mesh.visible = false;
+      return;
+    }
+    mesh.visible = true;
+    var norm = box.normalizePoint(hand.palmPosition);
+    vec4.fromArray(norm);
+    vec4.z *= -1;
+    vec4.w = 1;
+    // vec4.multiplyScalar(10)
+    // console.log(vec4)
+    m1.getInverse(camera.projectionMatrix);
+    // m1.multiply(camera.matrixWorldInverse)
+    vec4.applyMatrix4(m1);
+    vec4.applyMatrix4(camera.matrixWorldInverse);
+    // vec4.multiplyScalar(10)
+    // mesh.position.set(vec4.x/vec4.w, vec4.y/vec4.w, vec4.z/vec4.w);
+    mesh.position.set(vec4.x, vec4.y, vec4.z);
+    
+    direction.fromArray(hand.direction);
+    up.fromArray(hand.palmNormal).multiplyScalar(-1);
+    mesh.matrix.lookAt(direction, zeroVector, up);
+    mesh.quaternion.setFromRotationMatrix(mesh.matrix);
+  }
 
   function init(){
     scene = new THREE.Scene();
     world = new THREE.Object3D();
     scene.add(world);
     scene.add(new THREE.AmbientLight(0x888888));
-    pointLight = new THREE.PointLight(0xFFffff);
+    var pointLight = new THREE.PointLight(0xFFffff);
     pointLight.position = new THREE.Vector3(-20, 10, 0);
     pointLight.lookAt(new THREE.Vector3(0, 0, 0));
     scene.add(pointLight);
     camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 5000);
     camera.position.z = 30;
-    camera.position.y = 10;
     console.log( camera );
         
 
     controller = new Leap.Controller();
-    controller.use('handHold')
-    .use('handEntry')
-    .use('riggedHand', {parent: scene, scale: 2, materialOptions: {wireframe: false}});
+    // controller.use('handHold')
+    // .use('handEntry')
+    // .use('riggedHand', {parent: scene, scale: 2, materialOptions: {wireframe: false}});
         
     controls = new THREE.LeapClutchControls( world , controller );
 
@@ -120,6 +188,7 @@
   function animate(){
 
     controls.update();
+    updateHands();
     renderer.render( scene , camera );
 
     requestAnimationFrame( animate );
