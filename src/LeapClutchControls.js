@@ -19,12 +19,12 @@
     this.invert = (invert === undefined ? false : invert);
     this.anchorDelta = 1;
     
-    this.translationSpeed = 0.5;
+    this.translationSpeed = 1;
     this.translationDecay = 0.8;
     this.scaleDecay = 0.5;
     this.rotationSlerp = 0.8;
     this.rotationSpeed = 2;
-    this.pinchThreshold = 0.5;
+    this.pinchThreshold = 0.4;
     this.transSmoothing = 0.8;
     this.rotationSmoothing = 0.2;
     
