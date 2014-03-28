@@ -41,124 +41,64 @@
 		<script src="../lib/stats.min.js"></script>
 		<script src="../lib/dat.gui.min.js"></script>
 
-		<!-- pass through shaders -->
-		<script id="vertexShader" type="x-shader/x-vertex">
-      
-      varying vec2 vUv;
-      
-			void main()	{
-        vUv = uv;
-				gl_Position = vec4( position, 1.0 );
-			}
-
-		</script>
-
-		<script id="fragmentShader" type="x-shader/x-fragment">
-
-			uniform float time;
-			uniform sampler2D texture;
-      varying vec2 vUv;
-
-			void main()	{
-				gl_FragColor = texture2D( texture, vUv );
-			}
-
-		</script>
-		<!-- end pass through shaders -->
-
-		<script id="fragmentShaderVelocity" type="x-shader/x-fragment">
-
-			uniform float time;
-      varying vec2 vUv;
-
-			uniform sampler2D texture1;
-			uniform sampler2D texture2;
-
-      const float width = ${WIDTH}.;
-      const float height = ${HEIGHT}.;
-      const float d_width = 1./${WIDTH}.;
-      const float d_height = 1./${HEIGHT}.;
-      const float dt2 = ${DT2};
-
-			float rand(vec2 co){
-			    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-			}
-
-			void main()	{
-
-				vec4 selfPosition = texture2D( texture2, vUv );
-        // gl_FragColor = selfPosition;
-        vec3 f = vec3(0.);
-        for (float y = 0.0; y < 1.0; y += d_height) {
-          for (float x = 0.0; x < 1.0; x += d_width) {
-            
-            vec4 otherPosition = texture2D(texture2, vec2(x, y));
-        
-            vec3 diff = otherPosition.xyz - selfPosition.xyz;
-            
-            float a = dot(diff, diff) + 0.01;
-            f += otherPosition.a * diff / (a * sqrt(a));
-          }
-        }
-        
-        vec3 position = 2. * selfPosition.xyz - texture2D(texture1, vUv).xyz + f * dt2;
-        gl_FragColor = vec4(position, selfPosition.a);
-			}
-
-		</script>
-    
 		<script id="vertexShaderFDG" type="x-shader/x-vertex">
-      
       varying vec2 vUv;
+      varying vec3 vForce;
+      
+			uniform sampler2D texture1;
+      attribute vec4 node_indicies;
       
 			void main()	{
         vUv = uv;
-				gl_Position = vec4( position, 1.0 );
+        vec3 fake = position;
+        vec3 pos1 = texture2D(texture1, node_indicies.xy).xyz;
+        vec3 pos2 = texture2D(texture1, node_indicies.zw).xyz;
+
+        vForce = normalize(pos2 - pos1);
+        
+				gl_Position = vec4(node_indicies.x, node_indicies.y, 0.0, 1.0);
 			}
 
 		</script>
 
 		<script id="fragmentShaderFDG" type="x-shader/x-fragment">
-
-			uniform float time;
+      uniform float time;
       varying vec2 vUv;
+      varying vec3 vForce;
 
-			uniform sampler2D texture1;
-			uniform sampler2D texture2;
+      // uniform sampler2D texture1;
+      // uniform sampler2D texture2;
 
-      const float width = ${WIDTH}.;
-      const float height = ${HEIGHT}.;
-      const float d_width = 1./${WIDTH}.;
-      const float d_height = 1./${HEIGHT}.;
-      const float dt2 = ${DT2};
-
-			float rand(vec2 co){
-			    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-			}
+      // const float width = ${WIDTH}.;
+      // const float height = ${HEIGHT}.;
+      // const float d_width = 1./${WIDTH}.;
+      // const float d_height = 1./${HEIGHT}.;
+      // const float dt2 = ${DT2};
 
 			void main()	{
 
-				vec4 selfPosition = texture2D( texture2, vUv );
-        // gl_FragColor = selfPosition;
-        vec3 f = vec3(0.);
-        for (float y = 0.0; y < 1.0; y += d_height) {
-          for (float x = 0.0; x < 1.0; x += d_width) {
-            vec4 otherPosition = texture2D(texture2, vec2(x, y));
-            vec3 diff = otherPosition.xyz - selfPosition.xyz;
-            float a = dot(diff, diff) + 0.01;
-            f += otherPosition.a * diff / (a * sqrt(a));
-          }
-        }
-        
-        vec3 position = 2. * selfPosition.xyz - texture2D(texture1, vUv).xyz + f * dt2;
-        gl_FragColor = vec4(position, selfPosition.a);
+        // vec4 selfPosition = texture2D( texture1, vUv );
+        //         // gl_FragColor = selfPosition;
+        //         vec3 f = vec3(0.);
+        //         for (float y = 0.0; y < 1.0; y += d_height) {
+        //           for (float x = 0.0; x < 1.0; x += d_width) {
+        //             vec4 otherPosition = texture2D(texture2, vec2(x, y));
+        //             vec3 diff = otherPosition.xyz - selfPosition.xyz;
+        //             float a = dot(diff, diff) + 0.01;
+        //             f += otherPosition.a * diff / (a * sqrt(a));
+        //           }
+        //         }
+        //         
+        //         vec3 position = 2. * selfPosition.xyz - texture2D(texture1, vUv).xyz + f * dt2;
+        gl_FragColor = vec4(gl_FragCoord.x, gl_FragCoord.y, 1., 1.);
+        // gl_FragColor = vec4(vForce, 1.);
 			}
 
 		</script>
 
     <script src="../lib/leap.min.js"></script>
     <script src="../src/LeapClutchControls.js"></script>
-		<script src="../src/SimulatorRenderer.js"></script>
+		<script src="../src/ForceDirectedGraph.js"></script>
 
 		<script>
 
@@ -171,27 +111,17 @@
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
 
-			var WIDTH = 128;
-			var HEIGHT = 64;
-			var PARTICLES = WIDTH * HEIGHT;
-
-			var debug;
-			var data, texture;
-
-			console.log('total', PARTICLES);
-
-			var simulator;
-			var flipflop = 0;
-			var rt0, rt1, rt2;
-
 			init();
 			animate();
-
 
 			function init() {
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
 
 				camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 5000 );
 				camera.position.z = 1000;
@@ -203,174 +133,18 @@
         controller = new Leap.Controller();
         controls = new THREE.LeapClutchControls( world , controller );
         controller.connect();
-
-				geometry = getBufferParticleGeometry();
-
+        
 				renderer = new THREE.WebGLRenderer();
         renderer.setClearColor(0, 0);
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
 
-				////////
-
-        var vst = document.getElementById( 'vertexShader' ).textContent;
-        var fst = document.getElementById( 'fragmentShaderVelocity' ).textContent;
-				simulator = new SimulatorRenderer(WIDTH, HEIGHT, renderer, vst, fst);
+        var vst = document.getElementById( 'vertexShaderFDG' ).textContent;
+        var fst = document.getElementById( 'fragmentShaderFDG' ).textContent;
+				graph = new ForceDirectedGraph(renderer, vst, fst, 1024, 4096);
         
-				// Particle material
-
-
-				particle_basic = THREE.ShaderLib['particle_basic'] = {
-
-					uniforms:  THREE.UniformsUtils.merge( [
-
-						{
-							"lookup": { type: "t", value: null }
-						},
-						THREE.UniformsLib[ "particle" ],
-						THREE.UniformsLib[ "shadowmap" ],
-					] ),
-
-					vertexShader: [
-
-
-						"uniform sampler2D lookup;",
-
-						"uniform float size;",
-						"uniform float scale;",
-						"varying float mass;",
-
-            // THREE.ShaderChunk[ "color_pars_vertex" ],
-            // THREE.ShaderChunk[ "shadowmap_pars_vertex" ],
-
-						"void main() {",
-
-							THREE.ShaderChunk[ "color_vertex" ],
-
-
-							"vec2 lookupuv = position.xy;",
-							"vec4 pos = texture2D( lookup, lookupuv );",
-
-
-							"vec4 mvPosition = modelViewMatrix * vec4( pos.xyz, 1.0 );",
-
-							"#ifdef USE_SIZEATTENUATION",
-								"gl_PointSize = size * ( scale / length( mvPosition.xyz ) );",
-							"#else",
-								"gl_PointSize = size;",
-							"#endif",
-              
-              "mass = pos.a;",
-
-							"gl_Position = projectionMatrix * mvPosition;",
-
-              // THREE.ShaderChunk[ "worldpos_vertex" ],
-              // THREE.ShaderChunk[ "shadowmap_vertex" ],
-
-						"}"
-
-					].join("\n"),
-
-					fragmentShader: [
-
-						"uniform vec3 psColor;",
-						"uniform float opacity;",
-						"varying float mass;",
-
-            // THREE.ShaderChunk[ "color_pars_fragment" ],
-            THREE.ShaderChunk[ "map_particle_pars_fragment" ],
-            // THREE.ShaderChunk[ "fog_pars_fragment" ],
-            // THREE.ShaderChunk[ "shadowmap_pars_fragment" ],
-
-						"void main() {",
-            
-              "vec3 c;",
-              "if (mass < 0.5) {",
-              "c = mix(vec3(1., 0., 0.), vec3(0., 1., 0.), mass);",
-              "} else {",
-              "c = mix(vec3(0., 1., 0.), vec3(0., 0., 1.), mass);",
-              "}",
-							"gl_FragColor = vec4(c, 1.0);",
-
-              THREE.ShaderChunk[ "map_particle_fragment" ],
-              // THREE.ShaderChunk[ "alphatest_fragment" ],
-              // THREE.ShaderChunk[ "color_fragment" ],
-              // THREE.ShaderChunk[ "shadowmap_fragment" ],
-              // THREE.ShaderChunk[ "fog_fragment" ],
-
-						"}"
-
-					].join("\n")
-
-				};
-
-
-				material = new THREE.ParticleBasicMaterial( { size: 10, vertexColors: false,
-					map: THREE.ImageUtils.loadTexture( '../lib/round.png' ),
-          transparent: true,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false, depthTest: false,
-					uniforms: {
-						'color': {}
-					}
-				} );
-				console.log(material);
-
-				// material.map = rt1;
-				particle_basic.uniforms.lookup.value = rt1;
-				// material.uniforms.lookup.value = rt1;
-
-				particles = new THREE.ParticleSystem( geometry, material );
-				world.add( particles );
-
-				stats = new Stats();
-				stats.domElement.style.position = 'absolute';
-				stats.domElement.style.top = '0px';
-				container.appendChild( stats.domElement );
-
-				window.addEventListener( 'resize', onWindowResize, false );
-        window.addEventListener('keydown', function (e) {
-          console.log(e.keyCode);
-          switch(e.keyCode) {
-          case 37:
-            break;
-          case 38:
-            break;
-          case 39:
-            break;
-          case 40:
-            break;
-          }
-        }, false);
-
-
-				var gui = new dat.GUI();
-
-
-				var effectController = {
-					seperation: 20.0,
-					alignment: 20.0,
-					cohesion: 45.0,
-					freedom: 0.75
-				};
-
-				var valuesChanger = function() {
-          // 
-          // simulator.velocityUniforms.seperationDistance.value = effectController.seperation;
-          // simulator.velocityUniforms.alignmentDistance.value = effectController.alignment;
-          // simulator.velocityUniforms.cohesionDistance.value = effectController.cohesion;
-          // simulator.velocityUniforms.freedomFactor.value = effectController.freedom;
-
-				};
-
-				valuesChanger();
-
-
-				gui.add( effectController, "seperation", 0.0, 200.0, 1.0 ).onChange( valuesChanger );
-				gui.add( effectController, "alignment", 0.0, 80, 0.001 ).onChange( valuesChanger );
-				gui.add( effectController, "cohesion", 0.0, 1000, 0.025 ).onChange( valuesChanger );
-				gui.add( effectController, "freedom", 0.0, 1.0, 0.025 ).onChange( valuesChanger );
-        gui.close();
+        // setupParticles(graph.dims[0], graph.dims[1]);
+        setupQuad(graph.dims[0], graph.dims[1]);
 			}
 
 			function onWindowResize() {
@@ -387,65 +161,25 @@
 				stats.update();
 			}
 
-			var timer = 0;
 			function render() {
-				timer += 0.01;
-				var debugTime = false && Math.random() < 0.1;
-
-				debugTime && console.time('simulate');
-        simulator.simulate();
-				if (material.uniforms)
-          material.uniforms.lookup.value = simulator.output;
-				debugTime && console.timeEnd('simulate');
-
         controls.update();
-
-				var time = Date.now() * 0.00005;
-
-				debugTime && console.time('render');
-				renderer.render( scene, camera );
-				debugTime && console.timeEnd('render');
-
-			}
-      
-      function getTextureSize(num) {
-        var w = 1, h = 1;
         
-        while (h * w < num) {
-          w *= 2;
-          if (h * w >= num) break;
-          h *= 2;
-        }
-        console.log(w, h, num, (w*h), (w*h)/num);
-        return [w, h];
-      }
-      
-      function p2(n) {
-        return Math.ceil(Math.log(n)/Math.log(2));
-      }
-
-			function getEdgesGeometry(edges) {
-				var geometry = new THREE.BufferGeometry();
-				geometry.attributes = {
-					position: {
-						itemSize: 3,
-						array: new Float32Array(edges * 3),
-						numItems: edges * 3
-					}
-				}
-
-				var positions = geometry.attributes.position.array;
-				for (var i = 0; i < positions.length; i++) {
-					positions[i] = 0;
-				}
-
-				geometry.computeBoundingSphere();
-				return geometry;
+        // graph.computeForces();
+        // graph.updatePositions();
+        // renderer.setSize(window.innerWidth, window.innerHeight);
+        material.uniforms.map = graph.rt0;
+				renderer.render(scene, camera);
 			}
+      
+      function setupQuad(width, height) {
+        material = new THREE.MeshLambertMaterial({ map : null });
+        plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+        plane.rotation.z = Math.PI / 2;
+        scene.add(plane);
+      }
 
-
-			function getBufferParticleGeometry() {
-				var particles = PARTICLES;
+			function setupParticles(width, height) {
+				var particles = width * height;
 				var geometry = new THREE.BufferGeometry();
 				geometry.attributes = {
 					position: {
@@ -457,9 +191,8 @@
 				var positions = geometry.attributes.position.array;
 				for ( var i = 0; i < positions.length; i += 3 ) {
 					var j = ~~(i / 3);
-					var x = ( j % WIDTH ) / WIDTH ;
-					var y = Math.floor( j / WIDTH ) / HEIGHT;
-					var z = Math.random() * n - n2;
+					var x = ( j % width ) / width ;
+					var y = Math.floor( j / width ) / height;
 
 					positions[ i ]     = x;
 					positions[ i + 1 ] = y;
@@ -467,6 +200,65 @@
 				}
 
 				geometry.computeBoundingSphere();
+
+				particle_basic = THREE.ShaderLib['particle_basic'] = {
+					uniforms:  THREE.UniformsUtils.merge([
+						{"lookup": { type: "t", value: null }},
+						THREE.UniformsLib[ "particle" ],
+						THREE.UniformsLib[ "shadowmap" ],
+					]),
+
+					vertexShader: [
+						"uniform sampler2D lookup;",
+						"uniform float size;",
+						"uniform float scale;",
+						"varying float mass;",
+						"void main() {",
+							THREE.ShaderChunk[ "color_vertex" ],
+							"vec2 lookupuv = position.xy;",
+							"vec4 pos = texture2D( lookup, lookupuv );",
+							"vec4 mvPosition = modelViewMatrix * vec4( pos.xyz, 1.0 );",
+							"#ifdef USE_SIZEATTENUATION",
+								"gl_PointSize = size * ( scale / length( mvPosition.xyz ) );",
+							"#else",
+								"gl_PointSize = size;",
+							"#endif",
+              "mass = pos.a;",
+							"gl_Position = projectionMatrix * mvPosition;",
+						"}"
+					].join("\n"),
+					fragmentShader: [
+						"uniform vec3 psColor;",
+						"uniform float opacity;",
+						"varying float mass;",
+            THREE.ShaderChunk[ "map_particle_pars_fragment" ],
+						"void main() {",
+              "vec3 c;",
+              "if (mass < 0.5) {",
+              "c = mix(vec3(1., 0., 0.), vec3(0., 1., 0.), mass);",
+              "} else {",
+              "c = mix(vec3(0., 1., 0.), vec3(0., 0., 1.), mass);",
+              "}",
+							"gl_FragColor = vec4(c, 1.0);",
+
+              THREE.ShaderChunk[ "map_particle_fragment" ],
+						"}"
+					].join("\n")
+				};
+
+				material = new THREE.ParticleBasicMaterial( { size: 10, vertexColors: false,
+					map: THREE.ImageUtils.loadTexture( '../lib/round.png' ),
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false, depthTest: false,
+					uniforms: {
+						'color': {}
+					}
+				});
+
+				particles = new THREE.ParticleSystem( geometry, material );
+				world.add( particles );
+        
 				return geometry;
 			}
 		</script>

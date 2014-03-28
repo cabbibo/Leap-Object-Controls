@@ -1,8 +1,9 @@
 var SimulatorRenderer;
 (function () {
 
-  var DT2 = 0.01;
-  var BB_POWER = 509;
+  var DT2 = 0.1;
+  // var BB_POWER = 106.7999;
+  var BB_POWER = 1;
   
   SimulatorRenderer = function(WIDTH, HEIGHT, renderer, vertexShader, fragmentShader) {
     // webgl renderer
@@ -30,7 +31,7 @@ var SimulatorRenderer;
     fragmentShader = fragmentShader.replace(/\$\{DT2\}/g, DT2);
   	var simulatorMaterial = new THREE.ShaderMaterial( {
   		uniforms: {
-  			time: { type: "f", value: 1.0 },
+  			min_dist: { type: "f", value: 0.0 },
   			texture1: { type: "t", value: null },
   			texture2: { type: "t", value: null },
   		},
@@ -46,11 +47,11 @@ var SimulatorRenderer;
       texture: { type: "t", value: null },
     };
 
-    var material = new THREE.ShaderMaterial( {
+    var material = new THREE.ShaderMaterial({
       uniforms: uniforms,
       vertexShader: document.getElementById( 'vertexShader' ).textContent,
       fragmentShader: document.getElementById( 'fragmentShader' ).textContent
-    } );
+    });
   
   
     var geometry = new THREE.PlaneGeometry( 2, 2 );
@@ -58,6 +59,8 @@ var SimulatorRenderer;
     var mesh = new THREE.Mesh( geometry, material );
 
     scene.add( mesh );
+    
+    
 
     this.getRenderTarget = function() {
       var renderTarget = new THREE.WebGLRenderTarget(WIDTH, HEIGHT, {
@@ -76,7 +79,7 @@ var SimulatorRenderer;
     this.copyTexture = function(input, output) {
       uniforms.texture.value = input;
 
-      renderer.render(scene, camera, output)
+      renderer.render(scene, camera, output);
       this.output = output;
     }
 
@@ -93,10 +96,19 @@ var SimulatorRenderer;
 		var rt2 = rt0.clone();
 
 		this.copyTexture(generateDataTexture(0), rt0);
-    this.copyTexture(generateDataTexture(509 * DT2), rt1);
+    this.copyTexture(generateDataTexture(13.7), rt1);
     
-    var flipflop = 0;
+    var flipflop = 0, renderCount = 1;
     this.simulate = function () {
+      
+      // if (renderCount++ < 100) {
+      //   simulatorMaterial.uniforms.min_dist.value = 0.08;
+      // } else {
+      //   simulatorMaterial.uniforms.min_dist.value = 1;
+      // }
+      renderCount += 0.5;
+      simulatorMaterial.uniforms.min_dist.value = Math.min(renderCount/200, 1);
+      
       switch(flipflop) {
       case 0:
         this.renderStep(simulatorMaterial, rt0, rt1, rt2);
@@ -110,6 +122,9 @@ var SimulatorRenderer;
       }
 			flipflop = (flipflop+1) % 3;
     }
+    
+    // for (var sc = 0; sc < 100; sc++) this.simulate();
+    // simulatorMaterial.uniforms.min_dist.value = 0.01;
   }
   
 	function generateDataTexture(R) {
