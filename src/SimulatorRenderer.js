@@ -1,7 +1,7 @@
 var SimulatorRenderer;
 (function () {
 
-  var DT2 = 0.1;
+  var DT2 = 0.3;
   // var BB_POWER = 106.7999;
   var BB_POWER = 1;
   
@@ -29,8 +29,9 @@ var SimulatorRenderer;
     fragmentShader = fragmentShader.replace(/\$\{WIDTH\}/g, WIDTH);
     fragmentShader = fragmentShader.replace(/\$\{HEIGHT\}/g, HEIGHT);
     fragmentShader = fragmentShader.replace(/\$\{DT2\}/g, DT2);
-  	var simulatorMaterial = new THREE.ShaderMaterial( {
+  	simulatorMaterial = new THREE.ShaderMaterial({
   		uniforms: {
+        dt2: { type: 'f', value: DT2 },
   			min_dist: { type: "f", value: 0.0 },
   			texture1: { type: "t", value: null },
   			texture2: { type: "t", value: null },
@@ -96,9 +97,9 @@ var SimulatorRenderer;
 		var rt2 = rt0.clone();
 
 		this.copyTexture(generateDataTexture(0), rt0);
-    this.copyTexture(generateDataTexture(13.7), rt1);
+    this.copyTexture(generateDataTexture(15.65), rt1);
     
-    var flipflop = 0, renderCount = 1;
+    var flipflop = 0, renderCount = 0.001;
     this.simulate = function () {
       
       // if (renderCount++ < 100) {
@@ -106,8 +107,8 @@ var SimulatorRenderer;
       // } else {
       //   simulatorMaterial.uniforms.min_dist.value = 1;
       // }
-      renderCount += 0.5;
-      simulatorMaterial.uniforms.min_dist.value = Math.min(renderCount/200, 1);
+      renderCount += 0.01;
+      simulatorMaterial.uniforms.min_dist.value = Math.min(renderCount, 5);
       
       switch(flipflop) {
       case 0:

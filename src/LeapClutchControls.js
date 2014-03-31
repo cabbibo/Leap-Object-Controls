@@ -19,7 +19,7 @@
     this.invert = (invert === undefined ? false : invert);
     this.anchorDelta = 1;
     
-    this.translationSpeed = 1;
+    this.translationSpeed = .05;
     this.translationDecay = 0.8;
     this.scaleDecay = 0.5;
     this.rotationSlerp = 0.8;

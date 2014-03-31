@@ -69,6 +69,7 @@
 		<script id="fragmentShaderVelocity" type="x-shader/x-fragment">
 
 			uniform float min_dist;
+      uniform float dt2;
       varying vec2 vUv;
 
 			uniform sampler2D texture1;
@@ -78,11 +79,6 @@
       const float height = ${HEIGHT}.;
       const float d_width = 1./${WIDTH}.;
       const float d_height = 1./${HEIGHT}.;
-      const float dt2 = ${DT2};
-
-			float rand(vec2 co){
-			    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-			}
 
 			void main()	{
 				vec4 selfPosition = texture2D( texture2, vUv );
@@ -93,7 +89,7 @@
             vec4 otherPosition = texture2D(texture2, vec2(x, y));
             vec3 diff = otherPosition.xyz - selfPosition.xyz;
             float a = dot(diff, diff) + min_dist;
-            f += diff / (a * sqrt(a));
+            f += otherPosition.a * diff / (a * sqrt(a));
           }
         }
         
