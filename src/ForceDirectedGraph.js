@@ -71,6 +71,14 @@ var ForceDirectedGraph;
     this.output = output;
   }
   
+  Proto.renderNodes = function () {
+    
+  }
+  
+  Proto.renderEdges = function () {
+    
+  }
+  
   Proto.copyTexture = function(input, output) {
     this.copyMaterial.uniforms.texture.value = input;
     this.renderer.render(this.copyScene, this.camera, output)
@@ -116,7 +124,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.08 },
+        density: { type: 'f', value: 0.01 },
         texture1: { type: 't', value: null }
       },
       transparent: true,
