@@ -93,7 +93,7 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 1000 }
+        strength: { type: 'f', value: 200 }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
@@ -116,7 +116,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.1 },
+        density: { type: 'f', value: 0.08 },
         texture1: { type: 't', value: null }
       },
       transparent: true,

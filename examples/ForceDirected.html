@@ -94,21 +94,25 @@
 			void main()	{
         vec4 pos = texture2D(tPosition, vUv);
         
-        vec3 fl = texture2D(tForces, vUv).xyz;
-        vec3 f = vec3(0.);
-        for (float y = 0.; y < 1.0; y += d_height) {
-          for (float x = 0.; x < 1.0; x += d_width) {
-            vec4 oPos = texture2D(tPosition, vec2(x, y));
-            if (oPos.a > .5) {
-              vec3 diff = pos.xyz - oPos.xyz;
-              float a = length(diff) + 1.;
-              f += normalize(diff) / (a * a);
+        if (pos.a > 0.5) {
+          vec3 fl = texture2D(tForces, vUv).xyz;
+          vec3 f = vec3(0.);
+          for (float y = 0.; y < 1.0; y += d_height) {
+            if (texture2D(tPosition, vec2(0., y)).a > .5) {
+              for (float x = 0.; x < 1.0; x += d_width) {
+                vec4 oPos = texture2D(tPosition, vec2(x, y));
+                vec3 diff = pos.xyz - oPos.xyz;
+                float a = length(diff) + 1.;
+                f += normalize(diff) / (a * a);
+              }
             }
           }
-        }
         
-        vec3 newPos = pos.xyz + fl + f * strength;
-        gl_FragColor = vec4(newPos.xyz, pos.a);
+          vec3 newPos = pos.xyz + fl + f * strength;
+          gl_FragColor = vec4(newPos.xyz, pos.a);
+        } else {
+          gl_FragColor = vec4(0.);
+        }
 			}
 		</script>
 
@@ -140,7 +144,7 @@
 				container.appendChild( stats.domElement );
 
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 5000 );
-				camera.position.z = 100;
+				camera.position.z = 1000;
 
 				scene = new THREE.Scene();
         world = new THREE.Object3D();
@@ -162,7 +166,7 @@
         
         var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
         
-				graph = new ForceDirectedGraph(renderer, vst, fst, pfs, 16384, 16000);
+				graph = new ForceDirectedGraph(renderer, vst, fst, pfs, 3000, 6000);
         graph.output = graph.rt0;
         setupParticles(graph.nodeCount);
         setupLines(graph.edgeCount);
