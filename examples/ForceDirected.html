@@ -32,26 +32,6 @@
 		<script src="../lib/Detector.js"></script>
 		<script src="../lib/stats.min.js"></script>
 		<script src="../lib/dat.gui.min.js"></script>
-
-    
-		<script id="vertexShaderLine" type="x-shader/x-vertex">
-  		uniform sampler2D tPosition;
-      attribute vec2 color;
-    
-  		void main()	{
-        vec3 fake = position;
-
-				vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, color.xy).xyz, 1.0 );
-				gl_Position = projectionMatrix * mvPosition;
-  		}
-    </script>
-
-
-		<script id="fragmentShaderLine" type="x-shader/x-fragment">
-			void main()	{
-        gl_FragColor = vec4(1., 1., 1., 0.5);
-			}
-		</script>
     
 		<script id="vertexShaderFDG" type="x-shader/x-vertex">
 			uniform sampler2D texture1;
@@ -157,7 +137,7 @@
 				renderer = new THREE.WebGLRenderer();
         renderer.setClearColor(0, 0);
 				renderer.setSize( window.innerWidth, window.innerHeight );
-        // renderer.setBlending(THREE.AdditiveBlending);
+        
 				container.appendChild( renderer.domElement );
 
         var vst = document.getElementById( 'vertexShaderFDG' ).textContent;
@@ -166,10 +146,10 @@
         
         var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
         
-				graph = new ForceDirectedGraph(renderer, vst, fst, pfs, 6, edges);
-        graph.output = graph.rt0;
-        setupParticles(graph.nodeCount);
-        setupLines(graph.edgeCount);
+				graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs, 2000, 6000);
+
+       
+
         // setupQuad(graph.dims[0], graph.dims[1]);
 			}
 
@@ -192,14 +172,6 @@
         
         graph.computeForces();
         graph.updatePositions();
-
-        if (graph.output && material.uniforms) {
-          material.uniforms.lookup.value = graph.output
-        }
-        
-        // if (graph.output) {
-        //   material.map = graph.output;
-        // }
         
 				renderer.render(scene, camera);
 			}
@@ -209,115 +181,6 @@
         plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
         scene.add(plane);
       }
-
-
-			function setupLines(count) {
-        
-        geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', Float32Array, count*2, 3);
-        geometry.addAttribute('color', Float32Array, count*2, 2);
-    
-        lineMaterial = new THREE.ShaderMaterial({
-          attributes: {
-            color: { type: 'v2', value: null }
-          },
-          uniforms: {
-            tPosition: { type: 't', value: null }
-          },
-          transparent: true,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false, depthTest: false,
-          vertexShader: document.getElementById('vertexShaderLine').textContent,
-          fragmentShader: document.getElementById('fragmentShaderLine').textContent
-        });
-        
-        geometry.attributes.color.array = graph.geometry.attributes.color.array;
-  
-        lines = new THREE.Line(geometry, lineMaterial, THREE.LinePieces);
-        world.add(lines);
-      }
-
-			function setupParticles(count) {
-				particles = count;
-				var geometry = new THREE.BufferGeometry();
-				geometry.attributes = {
-					position: {
-						itemSize: 3,
-						array: new Float32Array( particles * 3 ),
-						numItems: particles * 3
-					}
-				}
-				var positions = geometry.attributes.position.array;
-				for (var i = 0; i < particles; i++) {
-          var n = graph.getIndecies(i);
-					positions[ i * 3 ]     = n.x;
-					positions[ i * 3 + 1 ] = n.y;
-					positions[ i * 3 + 2 ] = 0;
-				}
-
-				geometry.computeBoundingSphere();
-
-				particle_basic = THREE.ShaderLib['particle_basic'] = {
-					uniforms:  THREE.UniformsUtils.merge([
-						{"lookup": { type: "t", value: null }},
-						THREE.UniformsLib[ "particle" ],
-						THREE.UniformsLib[ "shadowmap" ],
-					]),
-
-					vertexShader: [
-						"uniform sampler2D lookup;",
-						"uniform float size;",
-						"uniform float scale;",
-						"varying float mass;",
-						"void main() {",
-							THREE.ShaderChunk[ "color_vertex" ],
-							"vec2 lookupuv = position.xy;",
-							"vec4 pos = texture2D( lookup, lookupuv );",
-							"vec4 mvPosition = modelViewMatrix * vec4( pos.xyz, 1.0 );",
-							"#ifdef USE_SIZEATTENUATION",
-								"gl_PointSize = size * ( scale / length( mvPosition.xyz ) );",
-							"#else",
-								"gl_PointSize = size;",
-							"#endif",
-              "mass = pos.a;",
-							"gl_Position = projectionMatrix * mvPosition;",
-						"}"
-					].join("\n"),
-					fragmentShader: [
-						"uniform vec3 psColor;",
-						"uniform float opacity;",
-						"varying float mass;",
-            THREE.ShaderChunk[ "map_particle_pars_fragment" ],
-						"void main() {",
-              "vec3 c;",
-              "if (mass < 0.5) {",
-              "c = mix(vec3(1., 0., 0.), vec3(0., 1., 0.), mass);",
-              "} else {",
-              "c = mix(vec3(0., 1., 0.), vec3(0., 0., 1.), mass);",
-              "}",
-              // "gl_FragColor = vec4(1., 1., 1., .8);",
-							"gl_FragColor = vec4(1.);",
-
-              THREE.ShaderChunk[ "map_particle_fragment" ],
-						"}"
-					].join("\n")
-				};
-
-				material = new THREE.ParticleBasicMaterial( { size: 10, vertexColors: false,
-          map: THREE.ImageUtils.loadTexture( '../lib/round.png' ),
-          transparent: true,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false, depthTest: false,
-					uniforms: {
-						'color': {}
-					}
-				});
-
-				particles = new THREE.ParticleSystem( geometry, material );
-				world.add( particles );
-        
-				return geometry;
-			}
 		</script>
 	</body>
 </html>
