@@ -123,8 +123,8 @@
 				stats.domElement.style.top = '0px';
 				container.appendChild( stats.domElement );
 
-				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 5000 );
-				camera.position.z = 100;
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 10, 10000 );
+				camera.position.z = 500;
 
 				scene = new THREE.Scene();
         world = new THREE.Object3D();
@@ -145,8 +145,10 @@
         var pfs = document.getElementById( 'fragmentShaderFDGPos' ).textContent;
         
         var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
-        
-				graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs, 2000, 6000);
+        // graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs, 6, edges); controls.translationSpeed = 0.05; camera.position.z = 100;
+        // graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs, 200, 200);
+        // graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs, 2000, 2000);
+        // graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs, 8000, 8000);
 
        
 

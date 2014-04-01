@@ -1,6 +1,6 @@
 var ForceDirectedGraph;
 (function () {
-  
+
   ForceDirectedGraph = function (renderer, scene, vertextShaderText, fragmentShaderText, posFS, nodeCount, edges) {
     this.renderer = renderer;
     this.scene = scene;
@@ -14,10 +14,10 @@ var ForceDirectedGraph;
 
     this.camera = new THREE.Camera();
     this.camera.position.z = 1;
-    
+
     var dims = getTextureSize(nodeCount);
     this.setDimensions(dims[0], dims[1]);
-    
+
     this.rt0 = getRenderTarget(dims[0], dims[1]);
     this.rt1 = this.rt0.clone();
     this.rt2 = this.rt0.clone();
@@ -35,9 +35,9 @@ var ForceDirectedGraph;
     this.setupLines();
     this.setupParticles();
   }
-  
+
   var Proto = ForceDirectedGraph.prototype;
-  
+
   Proto.computeForces = function () {
     var input;
     if (this.rtIdx) {
@@ -45,9 +45,9 @@ var ForceDirectedGraph;
     } else {
       input = this.rt1;
     }
-    
+
     this.forceMaterial.uniforms.texture1.value = input;
-    
+
     this.forceMaterial.uniforms.firstVertex.value = 1;
     this.renderer.render(this.forceScene, this.camera, this.rt2, false);
 
@@ -56,7 +56,7 @@ var ForceDirectedGraph;
     this.renderer.render(this.forceScene, this.camera, this.rt2, false);
     this.renderer.autoClear = true;
   }
-  
+
   Proto.updatePositions = function () {
     var input, output;
     if (this.rtIdx) {
@@ -74,15 +74,15 @@ var ForceDirectedGraph;
     this.output = output;
     this.particles.material.uniforms.tPosition.value = output;
   }
-  
+
   Proto.renderNodes = function () {
-    
+
   }
-  
+
   Proto.renderEdges = function () {
-    
+
   }
-  
+
   Proto.setupLines = function () {
 		var vs = ['uniform sampler2D tPosition;',
       'attribute vec2 color;',
@@ -91,11 +91,11 @@ var ForceDirectedGraph;
   		'	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
-      
+
 		var fs = ['void main()	{',
       '  gl_FragColor = vec4(1., 1., 1., 0.5);',
 			'}'].join('\n');
-      
+
     var geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', Float32Array, this.edgeCount*2, 3);
     geometry.addAttribute('color', Float32Array, this.edgeCount*2, 2);
@@ -113,13 +113,13 @@ var ForceDirectedGraph;
       vertexShader: vs,
       fragmentShader: fs
     });
-    
+
     geometry.attributes.color.array = this.geometry.attributes.color.array;
 
     this.lines = new THREE.Line(geometry, lineMaterial, THREE.LinePieces);
     this.scene.add(this.lines);
   }
-  
+
   Proto.setupParticles = function () {
 
 		var geometry = new THREE.BufferGeometry();
@@ -144,20 +144,21 @@ var ForceDirectedGraph;
       'uniform sampler2D tPosition;',
   		'void main()	{',
   		'	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, position.xy).xyz, 1.0 );',
-  		'	gl_PointSize = size * (scale / length(mvPosition.xyz));',
+      // '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
+  		'	gl_PointSize = size;',
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
-      
+
 		var fs = [
       'uniform sampler2D map;',
       'void main()	{',
       '  gl_FragColor = texture2D(map, vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y));',
 			'}'].join('\n');
-        
+
     var material = new THREE.ShaderMaterial({
           uniforms: {
             map: { type: 't', value: THREE.ImageUtils.loadTexture( '../lib/round.png' )},
-            size: { type: 'f', value: 5 },
+            size: { type: 'f', value: 10 },
             scale: { type: 'f', value: 500.0 },
             tPosition: { type: 't', value: null }
           },
@@ -171,12 +172,12 @@ var ForceDirectedGraph;
 		this.particles = new THREE.ParticleSystem( geometry, material );
 		this.scene.add( this.particles );
   }
-  
+
   Proto.copyTexture = function(input, output) {
     this.copyMaterial.uniforms.texture.value = input;
     this.renderer.render(this.copyScene, this.camera, output)
   };
-  
+
   Proto.setupPositionShader = function (fragmentShader) {
     var vs = [
       'varying vec2 vUv;',
@@ -194,28 +195,28 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 10 }
+        strength: { type: 'f', value: 100 }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
     });
-  
+
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.positionMaterial);
     this.positionScene.add(mesh);
   }
-  
+
   Proto.setupForcesShader = function (vertextShaderText, fragmentShaderText) {
     this.geometry = new THREE.BufferGeometry();
     this.geometry.addAttribute('position', Float32Array, this.edgeCount, 3);
     this.geometry.addAttribute('color', Float32Array, this.edgeCount, 4);
-    
+
     this.forceMaterial = new THREE.ShaderMaterial({
       attributes: {
         color: { type: 'v4', value: null }
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.05 },
+        density: { type: 'f', value: 0.08 },
         texture1: { type: 't', value: null }
       },
       transparent: true,
@@ -226,12 +227,12 @@ var ForceDirectedGraph;
     });
 
     this.forceScene = new THREE.Scene();
-  
+
     var mesh = new THREE.ParticleSystem(this.geometry, this.forceMaterial);
-    
+
     this.forceScene.add(mesh);
   }
-  
+
   Proto.setDimensions = function (w, h) {
     this.tWidth = w;
     this.tHeight = h;
@@ -240,10 +241,10 @@ var ForceDirectedGraph;
     this.twOff = 1 / (w * 2);
     this.thOff = 1 / (h * 2);
   }
-  
+
   Proto.populateEdgeGeometry = function () {
     var node_ids = this.geometry.attributes.color.array;
-    
+
     for (i = 0; i < this.edges.length; i+=2) {
       var n1 = this.getIndecies(this.edges[i])
       var n2 = this.getIndecies(this.edges[i+1]);
@@ -254,7 +255,7 @@ var ForceDirectedGraph;
     }
     this.edges = null;
   }
-  
+
   Proto.getIndecies = function (nodeId) {
     var out = {x: (nodeId % this.tWidth) * this.twInv + this.twOff,
                 y: Math.floor(nodeId / this.tWidth) * this.thInv + this.thOff};
@@ -262,7 +263,7 @@ var ForceDirectedGraph;
     // console.log(out.x, out.y)
     return out;
   }
-  
+
   Proto.generateRandomEdges = function () {
     var i;
     var node_ids = this.geometry.attributes.color.array;
@@ -272,7 +273,7 @@ var ForceDirectedGraph;
       node_ids[i+1] = n.y
     }
   };
-  
+
   Proto.setupCopyShader = function () {
     var vs = [
       'varying vec2 vUv;',
@@ -281,7 +282,7 @@ var ForceDirectedGraph;
   		'  gl_Position = vec4(position, 1.0);',
   		'}'
     ].join('\n');
-    
+
     var fs = [
   		'uniform sampler2D texture;',
       'varying vec2 vUv;',
@@ -298,11 +299,11 @@ var ForceDirectedGraph;
       vertexShader: vs,
       fragmentShader: fs
     });
-  
+
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.copyMaterial);
     this.copyScene.add(mesh);
   };
-  
+
   function getRenderTarget(width, height) {
     var renderTarget = new THREE.WebGLRenderTarget(width, height, {
       wrapS: THREE.RepeatWrapping,
@@ -320,29 +321,29 @@ var ForceDirectedGraph;
 	function getRandomTexture(w, h, c) {
 		var x, y, z, l = w * h;
 		var a = new Float32Array(l * 4);
-		for (var k = 0; k < c; k++) {      
+		for (var k = 0; k < c; k++) {
 			x = Math.random() * 20 - 10;
 			y = Math.random() * 20 - 10;
 			z = Math.random() * 20 - 10;
-      
+
 			a[k*4 + 0] = x;
 			a[k*4 + 1] = y;
 			a[k*4 + 2] = z;
       a[k*4 + 3] = 1;
 		}
-    
+
     var texture = new THREE.DataTexture(a, w, h, THREE.RGBAFormat, THREE.FloatType);
 		texture.minFilter = THREE.NearestFilter;
 		texture.magFilter = THREE.NearestFilter;
 		texture.needsUpdate = true;
 		texture.flipY = false;
-		
+
 		return texture;
 	}
-  
+
   function getTextureSize(num) {
     var w = 1, h = 1;
-    
+
     while (h * w < num) {
       w *= 2;
       if (h * w >= num) break;
@@ -351,7 +352,7 @@ var ForceDirectedGraph;
     console.log(w, h, num, (w*h), (w*h)/num);
     return [w, h];
   }
-  
+
   // function p2(n) {
   //   return Math.ceil(Math.log(n)/Math.log(2));
   // }
