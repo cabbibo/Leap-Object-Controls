@@ -181,6 +181,7 @@ var ForceDirectedGraph;
     }
 
     var vs = [
+      //'attri
       'uniform float size;',
       'uniform float scale;',
       'uniform sampler2D tPosition;',
@@ -203,11 +204,11 @@ var ForceDirectedGraph;
       uniforms: {
         map: {
           type: 't',
-          value: THREE.ImageUtils.loadTexture('../lib/colorful_b.png')
+          value: THREE.ImageUtils.loadTexture('../lib/lensFlare.png')
         },
         size: {
           type: 'f',
-          value: 30
+          value: 10
         },
         scale: {
           type: 'f',
