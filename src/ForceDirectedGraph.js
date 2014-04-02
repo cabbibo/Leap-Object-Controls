@@ -1,9 +1,19 @@
 var ForceDirectedGraph;
 (function () {
 
-  ForceDirectedGraph = function (renderer, scene, vertextShaderText, fragmentShaderText, posFS, nodeCount, edges) {
+  ForceDirectedGraph = function (renderer, scene, vertextShaderText, fragmentShaderText, posFS) {
     this.renderer = renderer;
     this.scene = scene;
+    this.camera = new THREE.Camera();
+    this.camera.position.z = 1;
+    this.vertextShaderText = vertextShaderText;
+    this.fragmentShaderText = fragmentShaderText;
+    this.posFS = posFS;
+  }
+
+  var Proto = ForceDirectedGraph.prototype;
+  
+  Proto.init = function (nodeCount, edges) {
     this.nodeCount = nodeCount;
     this.edges = edges;
     this.edgeCount = edges.length || edges;
@@ -12,8 +22,6 @@ var ForceDirectedGraph;
     this.copyMaterial = null;
     this.setupCopyShader();
 
-    this.camera = new THREE.Camera();
-    this.camera.position.z = 1;
 
     var dims = getTextureSize(nodeCount);
     this.setDimensions(dims[0], dims[1]);
@@ -24,8 +32,8 @@ var ForceDirectedGraph;
     this.copyTexture(getRandomTexture(dims[0], dims[1], this.nodeCount), this.rt0);
     this.copyTexture(this.rt0, this.rt1);
     this.rtIdx = true;
-    this.setupForcesShader(vertextShaderText, fragmentShaderText);
-    this.setupPositionShader(posFS);
+    this.setupForcesShader(this.vertextShaderText, this.fragmentShaderText);
+    this.setupPositionShader(this.posFS);
 
     if (this.edges.length) {
       this.populateEdgeGeometry();
@@ -35,8 +43,30 @@ var ForceDirectedGraph;
     this.setupLines();
     this.setupParticles();
   }
+  
+  Proto.parseDot = function (dotStr) {
+    var NID = 0;
+    var nodes = {};
+    var edges = [];
 
-  var Proto = ForceDirectedGraph.prototype;
+    var regex = /\s*"([^"]*?)"\s*-[>-]\s*"([^"]*?)"/g;
+    var match;
+    while ((match = regex.exec(dotStr)) !== null) {
+      var nid1 = nodes[match[1]];
+      if (nid1 == undefined) {
+        nid1 = nodes[match[1]] = NID++;
+      }
+      var nid2 = nodes[match[2]];
+      if (nid2 == undefined) {
+        nid2 = nodes[match[2]] = NID++;
+      }
+      edges.push(nid1, nid2);
+      // console.log(nid1, nid2);
+    }
+    // console.log(NID);
+    this.init(NID, edges);
+    // console.log(edges)
+  }
 
   Proto.computeForces = function () {
     var input;
@@ -84,16 +114,16 @@ var ForceDirectedGraph;
   }
 
   Proto.setupLines = function () {
-		var vs = ['uniform sampler2D tPosition;',
+		var vs = [
+      'uniform sampler2D tPosition;',
       'attribute vec2 color;',
   		'void main()	{',
-      '  vec3 fake = position;',
   		'	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
 
 		var fs = ['void main()	{',
-      '  gl_FragColor = vec4(1., 1., 1., 0.5);',
+      '  gl_FragColor = vec4(1., 1., 1., 0.1);',
 			'}'].join('\n');
 
     var geometry = new THREE.BufferGeometry();
@@ -113,6 +143,9 @@ var ForceDirectedGraph;
       vertexShader: vs,
       fragmentShader: fs
     });
+    
+    lineMaterial.index0AttributeName = 'color';
+    lineMaterial.linewidth = 1;
 
     geometry.attributes.color.array = this.geometry.attributes.color.array;
 
@@ -195,7 +228,7 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 100 }
+        strength: { type: 'f', value: 1000 }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
@@ -216,7 +249,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.08 },
+        density: { type: 'f', value: 0.0008 },
         texture1: { type: 't', value: null }
       },
       transparent: true,
