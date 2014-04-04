@@ -103,12 +103,18 @@
   <script src="../src/LeapPaddleControls.js"></script>
   <script src="../src/ForceDirectedGraph.js"></script>
   <script src="../src/GpuMaterial.js"></script>
+  <script src="../src/LeapUtils.js"></script>
 
   <script>
     if (!Detector.webgl) Detector.addGetWebGLMessage();
 
     var container, stats;
     var camera, scene, renderer, particles, geometry, simulatorMaterial, parameters, i, h, color;
+
+    // Leap Variables to be used as uniforms for exploration
+    var LEAP_FINGER_POS;    // vec3 for uniforms
+    var LEAP_FINGER_MARKER; // marker for LEAP_FINGER_POS
+
     var mouseX = 0,
       mouseY = 0;
 
@@ -136,9 +142,20 @@
       world = new THREE.Object3D();
       scene.add(world);
 
+      // Setting up Leap Variables
       controller = new Leap.Controller();
-      controls = new THREE.LeapClutchControls(world, controller);
       controller.connect();
+
+      LEAP_FINGER_POS = new THREE.Vector3();
+      var g = new THREE.IcosahedronGeometry( 5 , 1 );
+      var m = new THREE.MeshNormalMaterial();
+      LEAP_FINGER_MARKER = new THREE.Mesh( g , m );
+      scene.add( LEAP_FINGER_MARKER );
+      LEAP_FINGER_MARKER.position = LEAP_FINGER_POS;
+
+
+      controls = new THREE.LeapClutchControls(world, controller);
+      //controls = new THREE.TrackballControls( camera );
 
       renderer = new THREE.WebGLRenderer();
       // _gl = renderer.context;
@@ -242,10 +259,29 @@
       requestAnimationFrame(animate);
       render();
       stats.update();
+    
+    }
+
+    function leapUpdate(){
+
+      var frame = controller.frame();
+      if( frame.hands[0] ){
+        if( frame.hands[0].fingers[0].extended ){
+          var t = frame.hands[0].fingers[0].tipPosition;
+          var p = LeapUtils.leapToScene( t , frame , 1000 );
+          LEAP_FINGER_POS.copy( p );
+        }else{
+          LEAP_FINGER_POS.x = Infinity;
+        }
+      }else{
+        LEAP_FINGER_POS.x = Infinity;
+      }
+
     }
 
     function render() {
       controls.update();
+      leapUpdate();
 
       graph.computeForces();
       graph.updatePositions();

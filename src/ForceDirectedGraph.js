@@ -116,16 +116,24 @@ var ForceDirectedGraph;
   Proto.setupLines = function () {
     var vs = [
       'uniform sampler2D tPosition;',
+      'uniform vec3 fPos;', // Finger Position
+      'varying float vDistance;',
       'attribute vec2 color;',
-      'void main()	{',
-      '	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
-      '	gl_Position = projectionMatrix * mvPosition;',
+      'void main(){',
+      '  vec4 pos =  vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
+      '  vDistance = length(fPos - pos.xyz);',
+      '	 vec4 mvPosition = modelViewMatrix * pos;',
+      '	 gl_Position = projectionMatrix * mvPosition;',
       '}'
     ].join('\n');
 
-	var fs = ['void main()	{',
-      '  gl_FragColor = vec4(1., 1., 1., 0.5);',
-	'}'].join('\n');
+	var fs = [
+      'varying float vDistance;',
+      'void main(){',
+      '  gl_FragColor = vec4( 1. , 1. , 1. , (1. - vDistance / 100.0 ) );',
+
+      '}'
+    ].join('\n');
 
     var geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', Float32Array, this.edgeCount * 2, 3);
@@ -142,6 +150,10 @@ var ForceDirectedGraph;
         tPosition: {
           type: 't',
           value: null
+        },
+        fPos:{
+          type:'v3',
+          value: LEAP_FINGER_POS 
         }
       },
       transparent: true,
@@ -153,7 +165,7 @@ var ForceDirectedGraph;
     });
 
     lineMaterial.index0AttributeName = 'color';
-    lineMaterial.linewidth = 1;
+    lineMaterial.linewidth = 3;
 
     geometry.attributes.color.array = this.geometry.attributes.color.array;
 
