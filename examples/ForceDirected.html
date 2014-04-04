@@ -68,12 +68,8 @@
     uniform sampler2D tForces;
     uniform float strength;
 
-    const float d_width = 1. / $ {
-      WIDTH
-    }.;
-    const float d_height = 1. / $ {
-      HEIGHT
-    }.;
+    const float d_width = 1. / ${WIDTH}.;
+    const float d_height = 1. / ${HEIGHT}.;
 
     void main() {
       vec4 pos = texture2D(tPosition, vUv);

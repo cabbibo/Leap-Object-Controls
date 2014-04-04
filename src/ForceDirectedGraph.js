@@ -123,9 +123,9 @@ var ForceDirectedGraph;
       '}'
     ].join('\n');
 
-		var fs = ['void main()	{',
+	var fs = ['void main()	{',
       '  gl_FragColor = vec4(1., 1., 1., 0.5);',
-			'}'].join('\n');
+	'}'].join('\n');
 
     var geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', Float32Array, this.edgeCount * 2, 3);
