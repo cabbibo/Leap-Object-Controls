@@ -12,7 +12,7 @@ var ForceDirectedGraph;
   }
 
   var Proto = ForceDirectedGraph.prototype;
-  
+
   Proto.init = function (nodeCount, edges) {
     this.nodeCount = nodeCount;
     this.edges = edges;
@@ -43,7 +43,7 @@ var ForceDirectedGraph;
     this.setupLines();
     this.setupParticles();
   }
-  
+
   Proto.parseDot = function (dotStr) {
     var NID = 0;
     var nodes = {};
@@ -114,36 +114,44 @@ var ForceDirectedGraph;
   }
 
   Proto.setupLines = function () {
-		var vs = [
+    var vs = [
       'uniform sampler2D tPosition;',
       'attribute vec2 color;',
-  		'void main()	{',
-  		'	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
-  		'	gl_Position = projectionMatrix * mvPosition;',
-  		'}'].join('\n');
+      'void main()	{',
+      '	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
+      '	gl_Position = projectionMatrix * mvPosition;',
+      '}'
+    ].join('\n');
 
 		var fs = ['void main()	{',
       '  gl_FragColor = vec4(1., 1., 1., 0.5);',
 			'}'].join('\n');
 
     var geometry = new THREE.BufferGeometry();
-    geometry.addAttribute('position', Float32Array, this.edgeCount*2, 3);
-    geometry.addAttribute('color', Float32Array, this.edgeCount*2, 2);
+    geometry.addAttribute('position', Float32Array, this.edgeCount * 2, 3);
+    geometry.addAttribute('color', Float32Array, this.edgeCount * 2, 2);
 
     var lineMaterial = new THREE.ShaderMaterial({
       attributes: {
-        color: { type: 'v2', value: null }
+        color: {
+          type: 'v2',
+          value: null
+        }
       },
       uniforms: {
-        tPosition: { type: 't', value: null }
+        tPosition: {
+          type: 't',
+          value: null
+        }
       },
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false, depthTest: false,
+      depthWrite: false,
+      depthTest: false,
       vertexShader: vs,
       fragmentShader: fs
     });
-    
+
     lineMaterial.index0AttributeName = 'color';
     lineMaterial.linewidth = 1;
 
@@ -155,24 +163,25 @@ var ForceDirectedGraph;
 
   Proto.setupParticles = function () {
 
-		var geometry = new THREE.BufferGeometry();
-		geometry.attributes = {
-			position: {
-				itemSize: 3,
-				array: new Float32Array( this.nodeCount * 3 ),
-				numItems: this.nodeCount * 3
-			}
-		}
-		var positions = geometry.attributes.position.array;
-		for (var i = 0; i < this.nodeCount; i++) {
+    var geometry = new THREE.BufferGeometry();
+    geometry.attributes = {
+      position: {
+        itemSize: 3,
+        array: new Float32Array(this.nodeCount * 3),
+        numItems: this.nodeCount * 3
+      }
+    }
+    var positions = geometry.attributes.position.array;
+    for (var i = 0; i < this.nodeCount; i++) {
       var n = this.getIndecies(i);
-			positions[ i * 3 ]     = n.x;
-			positions[ i * 3 + 1 ] = n.y;
-			positions[ i * 3 + 2 ] = 0;
-		}
+      positions[i * 3] = n.x;
+      positions[i * 3 + 1] = n.y;
+      positions[i * 3 + 2] = 0;
+    }
 
-		var vs = [
-			'uniform float size;',
+    var vs = [
+      //'attri
+      'uniform float size;',
       'uniform float scale;',
       'uniform sampler2D tPosition;',
   		'void main()	{',
@@ -182,31 +191,45 @@ var ForceDirectedGraph;
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
 
-		var fs = [
+    var fs = [
       'uniform sampler2D map;',
       'void main()	{',
       '  gl_FragColor = texture2D(map, vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y));',
-			'}'].join('\n');
+      '}'
+    ].join('\n');
 
     var material = new THREE.ShaderMaterial({
-          uniforms: {
-            map: { type: 't', value: THREE.ImageUtils.loadTexture( '../lib/round.png' )},
-            size: { type: 'f', value: 10 },
-            scale: { type: 'f', value: 500.0 },
-            tPosition: { type: 't', value: null }
-          },
-          transparent: true,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false, depthTest: false,
-          vertexShader: vs,
-          fragmentShader: fs
-        });
+      uniforms: {
+        map: {
+          type: 't',
+          value: THREE.ImageUtils.loadTexture('../lib/lensFlare.png')
+        },
+        size: {
+          type: 'f',
+          value: 10
+        },
+        scale: {
+          type: 'f',
+          value: 500.0
+        },
+        tPosition: {
+          type: 't',
+          value: null
+        }
+      },
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+      vertexShader: vs,
+      fragmentShader: fs
+    });
 
-		this.particles = new THREE.ParticleSystem( geometry, material );
-		this.scene.add( this.particles );
+    this.particles = new THREE.ParticleSystem(geometry, material);
+    this.scene.add(this.particles);
   }
 
-  Proto.copyTexture = function(input, output) {
+  Proto.copyTexture = function (input, output) {
     this.copyMaterial.uniforms.texture.value = input;
     this.renderer.render(this.copyScene, this.camera, output)
   };
@@ -214,10 +237,10 @@ var ForceDirectedGraph;
   Proto.setupPositionShader = function (fragmentShader) {
     var vs = [
       'varying vec2 vUv;',
-  		'void main() {',
+      'void main() {',
       '  vUv = uv;',
-  		'  gl_Position = vec4(position, 1.0);',
-  		'}'
+      '  gl_Position = vec4(position, 1.0);',
+      '}'
     ].join('\n');
 
     fragmentShader = fragmentShader.replace(/\$\{WIDTH\}/g, this.tWidth);
@@ -245,7 +268,10 @@ var ForceDirectedGraph;
 
     this.forceMaterial = new THREE.ShaderMaterial({
       attributes: {
-        color: { type: 'v4', value: null }
+        color: {
+          type: 'v4',
+          value: null
+        }
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
@@ -254,7 +280,8 @@ var ForceDirectedGraph;
       },
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false, depthTest: false,
+      depthWrite: false,
+      depthTest: false,
       vertexShader: vertextShaderText,
       fragmentShader: fragmentShaderText
     });
@@ -278,20 +305,22 @@ var ForceDirectedGraph;
   Proto.populateEdgeGeometry = function () {
     var node_ids = this.geometry.attributes.color.array;
 
-    for (i = 0; i < this.edges.length; i+=2) {
+    for (i = 0; i < this.edges.length; i += 2) {
       var n1 = this.getIndecies(this.edges[i])
-      var n2 = this.getIndecies(this.edges[i+1]);
-      node_ids[i*4+0] = n1.x;
-      node_ids[i*4+1] = n1.y;
-      node_ids[i*4+2] = n2.x;
-      node_ids[i*4+3] = n2.y;
+      var n2 = this.getIndecies(this.edges[i + 1]);
+      node_ids[i * 4 + 0] = n1.x;
+      node_ids[i * 4 + 1] = n1.y;
+      node_ids[i * 4 + 2] = n2.x;
+      node_ids[i * 4 + 3] = n2.y;
     }
     this.edges = null;
   }
 
   Proto.getIndecies = function (nodeId) {
-    var out = {x: (nodeId % this.tWidth) * this.twInv + this.twOff,
-                y: Math.floor(nodeId / this.tWidth) * this.thInv + this.thOff};
+    var out = {
+      x: (nodeId % this.tWidth) * this.twInv + this.twOff,
+      y: Math.floor(nodeId / this.tWidth) * this.thInv + this.thOff
+    };
     // console.log(nodeId)
     // console.log(out.x, out.y)
     return out;
@@ -303,31 +332,34 @@ var ForceDirectedGraph;
     for (i = 0; i < node_ids.length; i += 2) {
       var n = this.getIndecies(Math.floor(Math.random() * this.nodeCount));
       node_ids[i] = n.x;
-      node_ids[i+1] = n.y
+      node_ids[i + 1] = n.y
     }
   };
 
   Proto.setupCopyShader = function () {
     var vs = [
       'varying vec2 vUv;',
-  		'void main() {',
+      'void main() {',
       '  vUv = uv;',
-  		'  gl_Position = vec4(position, 1.0);',
-  		'}'
+      '  gl_Position = vec4(position, 1.0);',
+      '}'
     ].join('\n');
 
     var fs = [
-  		'uniform sampler2D texture;',
+      'uniform sampler2D texture;',
       'varying vec2 vUv;',
-  		'void main() {',
-  		'  gl_FragColor = texture2D(texture, vUv);',
-  		'}'
+      'void main() {',
+      '  gl_FragColor = texture2D(texture, vUv);',
+      '}'
     ].join('\n');
 
     this.copyScene = new THREE.Scene();
     this.copyMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        texture: { type: "t", value: null },
+        texture: {
+          type: "t",
+          value: null
+        },
       },
       vertexShader: vs,
       fragmentShader: fs
@@ -351,42 +383,40 @@ var ForceDirectedGraph;
     return renderTarget;
   }
 
-	function getRandomTexture(w, h, c) {
-		var x, y, z, l = w * h;
-		var a = new Float32Array(l * 4);
-		for (var k = 0; k < c; k++) {
-			x = Math.random() * 20 - 10;
-			y = Math.random() * 20 - 10;
-			z = Math.random() * 20 - 10;
+  function getRandomTexture(w, h, c) {
+    var x, y, z, l = w * h;
+    var a = new Float32Array(l * 4);
+    for (var k = 0; k < c; k++) {
+      x = Math.random() * 20 - 10;
+      y = Math.random() * 20 - 10;
+      z = Math.random() * 20 - 10;
 
-			a[k*4 + 0] = x;
-			a[k*4 + 1] = y;
-			a[k*4 + 2] = z;
-      a[k*4 + 3] = 1;
-		}
+      a[k * 4 + 0] = x;
+      a[k * 4 + 1] = y;
+      a[k * 4 + 2] = z;
+      a[k * 4 + 3] = 1;
+    }
 
     var texture = new THREE.DataTexture(a, w, h, THREE.RGBAFormat, THREE.FloatType);
-		texture.minFilter = THREE.NearestFilter;
-		texture.magFilter = THREE.NearestFilter;
-		texture.needsUpdate = true;
-		texture.flipY = false;
+    texture.minFilter = THREE.NearestFilter;
+    texture.magFilter = THREE.NearestFilter;
+    texture.needsUpdate = true;
+    texture.flipY = false;
 
-		return texture;
-	}
+    return texture;
+  }
 
   function getTextureSize(num) {
-    var w = 1, h = 1;
+    var w = 1,
+      h = 1;
 
     while (h * w < num) {
       w *= 2;
       if (h * w >= num) break;
       h *= 2;
     }
-    console.log(w, h, num, (w*h), (w*h)/num);
+    console.log(w, h, num, (w * h), (w * h) / num);
     return [w, h];
   }
 
-  // function p2(n) {
-  //   return Math.ceil(Math.log(n)/Math.log(2));
-  // }
 }());
