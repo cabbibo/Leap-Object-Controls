@@ -123,7 +123,7 @@ var ForceDirectedGraph;
   		'}'].join('\n');
 
 		var fs = ['void main()	{',
-      '  gl_FragColor = vec4(1., 1., 1., 0.1);',
+      '  gl_FragColor = vec4(1., 1., 1., 0.5);',
 			'}'].join('\n');
 
     var geometry = new THREE.BufferGeometry();
@@ -177,8 +177,8 @@ var ForceDirectedGraph;
       'uniform sampler2D tPosition;',
   		'void main()	{',
   		'	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, position.xy).xyz, 1.0 );',
-      // '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
-  		'	gl_PointSize = size;',
+      '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
+      // '  gl_PointSize = size;',
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
 
@@ -228,7 +228,7 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 1000 }
+        strength: { type: 'f', value: 10 }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
@@ -249,7 +249,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.0008 },
+        density: { type: 'f', value: 0.1 },
         texture1: { type: 't', value: null }
       },
       transparent: true,
