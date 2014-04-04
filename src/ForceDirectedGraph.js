@@ -121,7 +121,7 @@ var ForceDirectedGraph;
       'attribute vec2 color;',
       'void main(){',
       '  vec4 pos =  vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
-      '  vDistance = length(fPos.xy - pos.xy);',
+      '  vDistance = length(fPos.xyz - pos.xyz);',
       '	 vec4 mvPosition = modelViewMatrix * pos;',
       '	 gl_Position = projectionMatrix * mvPosition;',
       '}'
@@ -130,7 +130,7 @@ var ForceDirectedGraph;
 	var fs = [
       'varying float vDistance;',
       'void main(){',
-      '  gl_FragColor = vec4( 1. , 1. , 1. , .1 );',
+      '  gl_FragColor = vec4( 1. , 1. , 1. , max( .1 , (1. - vDistance / 100. ) ));',
 
       '}'
     ].join('\n');
