@@ -157,7 +157,7 @@
       gFingerMarker.position = gFingerPos;
 
 
-      controls = new THREE.LeapClutchControls(world, controller);
+      controls = new THREE.LeapSpringControls( camera , controller , scene );
       //controls = new THREE.TrackballControls( camera );
 
       renderer = new THREE.WebGLRenderer();
@@ -267,19 +267,21 @@
 
     function leapUpdate(){
 
-      var frame = controller.frame();
+      /*var frame = controller.frame();
       if( frame.hands[0] ){
         if( frame.hands[0].fingers[0].extended ){
           var t = frame.hands[0].fingers[0].tipPosition;
           var p = LeapUtils.leapToScene( t , frame , 1000 );
-          gFingerPos.copy( p );
+          //gFingerPos.copy( camera.position );
         }else{
           gFingerPos.x = Infinity;
         }
       }else{
         gFingerPos.x = Infinity;
-      }
+      }*/
 
+      gFingerPos.copy( camera.position );
+      
     }
 
     function render() {

@@ -202,7 +202,7 @@ var ForceDirectedGraph;
         '   vec3 pos = texture2D(tPosition, position.xy).xyz;',
         '   vDistance = length( pos - fPos );',
   		'	vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
-        '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
+        '  gl_PointSize = size * max( .5 , (3. - ( vDistance / 100.0 ) ) )* (scale / length(mvPosition.xyz));',
       // '  gl_PointSize = size;',
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');

@@ -157,7 +157,9 @@
       gFingerMarker.position = gFingerPos;
 
 
-      controls = new THREE.LeapClutchControls(world, controller);
+      controls = new THREE.LeapTrackballControls( camera , controller);
+      controls.maxZoom = 1000;
+      controls.zoomDampening = .9;
       //controls = new THREE.TrackballControls( camera );
 
       renderer = new THREE.WebGLRenderer();
@@ -273,6 +275,7 @@
         if( frame.hands[0].fingers[0].extended ){
           var t = frame.hands[0].fingers[0].tipPosition;
           var p = LeapUtils.leapToScene( t , frame , 1000 );
+          p.applyMatrix4( camera.matrix );
           gFingerPos.copy( p );
         }else{
           gFingerPos.x = Infinity;
