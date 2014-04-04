@@ -112,8 +112,8 @@
     var camera, scene, renderer, particles, geometry, simulatorMaterial, parameters, i, h, color;
 
     // Leap Variables to be used as uniforms for exploration
-    var LEAP_FINGER_POS;    // vec3 for uniforms
-    var LEAP_FINGER_MARKER; // marker for LEAP_FINGER_POS
+    var gFingerPos;    // vec3 for uniforms
+    var gFingerMarker; // marker for LEAP_FINGER_POS
 
     var mouseX = 0,
       mouseY = 0;
@@ -146,12 +146,12 @@
       controller = new Leap.Controller();
       controller.connect();
 
-      LEAP_FINGER_POS = new THREE.Vector3();
+      gFingerPos = new THREE.Vector3();
       var g = new THREE.IcosahedronGeometry( 5 , 1 );
       var m = new THREE.MeshNormalMaterial();
-      LEAP_FINGER_MARKER = new THREE.Mesh( g , m );
-      scene.add( LEAP_FINGER_MARKER );
-      LEAP_FINGER_MARKER.position = LEAP_FINGER_POS;
+      gFingerMarker = new THREE.Mesh( g , m );
+      scene.add( gFingerMarker );
+      gFingerMarker.position = gFingerPos;
 
 
       controls = new THREE.LeapClutchControls(world, controller);
@@ -269,12 +269,12 @@
         if( frame.hands[0].fingers[0].extended ){
           var t = frame.hands[0].fingers[0].tipPosition;
           var p = LeapUtils.leapToScene( t , frame , 1000 );
-          LEAP_FINGER_POS.copy( p );
+          gFingerPos.copy( p );
         }else{
-          LEAP_FINGER_POS.x = Infinity;
+          gFingerPos.x = Infinity;
         }
       }else{
-        LEAP_FINGER_POS.x = Infinity;
+        gFingerPos.x = Infinity;
       }
 
     }

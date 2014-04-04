@@ -130,7 +130,7 @@ var ForceDirectedGraph;
 	var fs = [
       'varying float vDistance;',
       'void main(){',
-      '  gl_FragColor = vec4( 1. , 1. , 1. , (1. - vDistance / 100.0 ) );',
+      '  gl_FragColor = vec4( 1. , 1. , 1. , .1 );',
 
       '}'
     ].join('\n');
@@ -153,7 +153,7 @@ var ForceDirectedGraph;
         },
         fPos:{
           type:'v3',
-          value: LEAP_FINGER_POS 
+          value: gFingerPos 
         }
       },
       transparent: true,
@@ -165,7 +165,7 @@ var ForceDirectedGraph;
     });
 
     lineMaterial.index0AttributeName = 'color';
-    lineMaterial.linewidth = 3;
+    lineMaterial.linewidth = 1;
 
     geometry.attributes.color.array = this.geometry.attributes.color.array;
 
@@ -195,18 +195,24 @@ var ForceDirectedGraph;
       //'attri
       'uniform float size;',
       'uniform float scale;',
+      'uniform vec3  fPos;',
       'uniform sampler2D tPosition;',
+      'varying float vDistance;',
   		'void main()	{',
-  		'	vec4 mvPosition = modelViewMatrix * vec4( texture2D(tPosition, position.xy).xyz, 1.0 );',
-      '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
+        '   vec3 pos = texture2D(tPosition, position.xy).xyz;',
+        '   vDistance = length( pos - fPos );',
+  		'	vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
+        '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
       // '  gl_PointSize = size;',
   		'	gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
 
     var fs = [
+      'varying float vDistance;',
       'uniform sampler2D map;',
       'void main()	{',
       '  gl_FragColor = texture2D(map, vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y));',
+      '  gl_FragColor.a *= max( 0.1 , (1.0 - vDistance/100.0 ) );',
       '}'
     ].join('\n');
 
@@ -227,6 +233,10 @@ var ForceDirectedGraph;
         tPosition: {
           type: 't',
           value: null
+        },
+        fPos:{
+          type:'v3',
+          value:gFingerPos
         }
       },
       transparent: true,
