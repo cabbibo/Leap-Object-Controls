@@ -220,7 +220,7 @@ var ForceDirectedGraph;
       uniforms: {
         map: {
           type: 't',
-          value: THREE.ImageUtils.loadTexture('../lib/lensFlare.png')
+          value: THREE.ImageUtils.loadTexture('../../lib/lensFlare.png')
         },
         size: {
           type: 'f',
