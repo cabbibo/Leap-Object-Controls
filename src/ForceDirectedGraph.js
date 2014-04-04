@@ -121,7 +121,7 @@ var ForceDirectedGraph;
       'attribute vec2 color;',
       'void main(){',
       '  vec4 pos =  vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
-      '  vDistance = length(fPos - pos.xyz);',
+      '  vDistance = length(fPos.xy - pos.xy);',
       '	 vec4 mvPosition = modelViewMatrix * pos;',
       '	 gl_Position = projectionMatrix * mvPosition;',
       '}'
