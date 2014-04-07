@@ -9,6 +9,7 @@ var ForceDirectedGraph;
     this.vertextShaderText = vertextShaderText;
     this.fragmentShaderText = fragmentShaderText;
     this.posFS = posFS;
+    this.highlightPos = new THREE.Vector3();
   }
 
   var Proto = ForceDirectedGraph.prototype;
@@ -29,11 +30,14 @@ var ForceDirectedGraph;
     this.rt0 = getRenderTarget(dims[0], dims[1]);
     this.rt1 = this.rt0.clone();
     this.rt2 = this.rt0.clone();
+    this.rt3 = getRenderTarget(4, 4);
+    
     this.copyTexture(getRandomTexture(dims[0], dims[1], this.nodeCount), this.rt0);
     this.copyTexture(this.rt0, this.rt1);
     this.rtIdx = true;
     this.setupForcesShader(this.vertextShaderText, this.fragmentShaderText);
     this.setupPositionShader(this.posFS);
+    this.setupPickerShader();
 
     if (this.edges.length) {
       this.populateEdgeGeometry();
@@ -105,12 +109,26 @@ var ForceDirectedGraph;
     this.particles.material.uniforms.tPosition.value = output;
   }
 
-  Proto.renderNodes = function () {
-
+  Proto.setHighlightPos = function (pos) {
+    this.highlightPos.copy(pos);
   }
 
-  Proto.renderEdges = function () {
+  var tmpBuffer = new Uint8Array(4 * 4 * 4);
+  Proto.runPicker = function () {
+    this.pickerMaterial.uniforms.tPosition.value = this.output;
+    this.renderer.render(this.pickerScene, this.camera, this.rt3);
+    var gl = this.renderer.getContext();
+    gl.readPixels( 0, 0, 4, 4, gl.RGBA, gl.UNSIGNED_BYTE, tmpBuffer );
+    for (var i = 0; i < 1; i++) {
+      // var x = Math.round(tmpBuffer[i*4] / 255) * this.tWidth;
+      // var y = Math.round(tmpBuffer[i*4+1] / 255) * this.tHeight;
+      // console.log(y * this.tWidth + x);
+      // console.log(tmpBuffer[i*4], tmpBuffer[i*4+1])
+      this.getNodeId(tmpBuffer[i*4] / 255, tmpBuffer[i*4+1] / 255);
+    }
 
+    // console.log(tmpBuffer[0], tmpBuffer[1])
+    // console.log(tmpBuffer)
   }
 
   Proto.setupLines = function () {
@@ -130,7 +148,7 @@ var ForceDirectedGraph;
 	var fs = [
       'varying float vDistance;',
       'void main(){',
-      '  gl_FragColor = vec4( 1. , 1. , 1. , .1 );',
+      '  gl_FragColor = vec4( 1. , 1. , 1. , .5 );',
 
       '}'
     ].join('\n');
@@ -153,13 +171,13 @@ var ForceDirectedGraph;
         },
         fPos:{
           type:'v3',
-          value: gFingerPos 
+          value: this.highlightPos
         }
       },
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      depthTest: false,
+      depthWrite: true,
+      depthTest: true,
       vertexShader: vs,
       fragmentShader: fs
     });
@@ -199,12 +217,12 @@ var ForceDirectedGraph;
       'uniform sampler2D tPosition;',
       'varying float vDistance;',
   		'void main()	{',
-        '   vec3 pos = texture2D(tPosition, position.xy).xyz;',
-        '   vDistance = length( pos - fPos );',
-  		'	vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
-        '  gl_PointSize = size * (scale / length(mvPosition.xyz));',
+      '   vec3 pos = texture2D(tPosition, position.xy).xyz;',
+      '   vDistance = length( pos - fPos );',
+      '	  vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
+      '   gl_PointSize = size * (scale / length(mvPosition.xyz));',
       // '  gl_PointSize = size;',
-  		'	gl_Position = projectionMatrix * mvPosition;',
+		  '	  gl_Position = projectionMatrix * mvPosition;',
   		'}'].join('\n');
 
     var fs = [
@@ -235,14 +253,14 @@ var ForceDirectedGraph;
           value: null
         },
         fPos:{
-          type:'v3',
-          value:gFingerPos
+          type: 'v3',
+          value: this.highlightPos
         }
       },
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      depthTest: false,
+      depthWrite: true,
+      depthTest: true,
       vertexShader: vs,
       fragmentShader: fs
     });
@@ -273,7 +291,7 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 10 }
+        strength: { type: 'f', value: 1000 }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
@@ -281,6 +299,63 @@ var ForceDirectedGraph;
 
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.positionMaterial);
     this.positionScene.add(mesh);
+  }
+
+  Proto.setupPickerShader = function () {
+    var vs = [
+      'varying vec2 vUv;',
+      'void main() {',
+      '  vUv = uv;',
+      '  gl_Position = vec4(position, 1.0);',
+      '}'
+    ].join('\n');
+
+    var fs = [
+      'uniform vec3 fPos;',
+      'uniform sampler2D tPosition;',
+      'varying vec2 vUv;',
+      '',
+      'const float d_width = 1. / ${WIDTH}.;',
+      'const float d_height = 1. / ${HEIGHT}.;',
+      'void main()	{',
+      '',
+      '  float minDist = 10000000000000.;',
+      '  vec2 minCoords = vec2(0.);',
+      '  for (float y = d_height * 0.5; y < 1.0; y += d_height) {',
+      '    if (texture2D(tPosition, vec2(0., y)).a > .5) {',
+      '      for (float x = d_width * 0.5; x < 1.0; x += d_width) {',
+      '        vec4 pos = texture2D(tPosition, vec2(x, y));',
+      '        float dist = length(pos.xyz - fPos.xyz);',
+      '        if (dist < minDist) {',
+      '          minDist = dist;',
+      '          minCoords = vec2(x, y);',
+      '        }',
+      '      }',
+      '    }',
+      '  }',
+      '  gl_FragColor = vec4(minCoords.x, minCoords.y, 0., 0.);',
+      '}'
+    ].join('\n');
+
+
+    fs = fs.replace(/\$\{WIDTH\}/g, this.tWidth);
+    fs = fs.replace(/\$\{HEIGHT\}/g, this.tHeight);
+
+    this.pickerScene = new THREE.Scene();
+    this.pickerMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        tPosition: { type: "t", value: null },
+        fPos:{
+          type: 'v3',
+          value: this.highlightPos
+        }
+      },
+      vertexShader: vs,
+      fragmentShader: fs
+    });
+
+    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.pickerMaterial);
+    this.pickerScene.add(mesh);
   }
 
   Proto.setupForcesShader = function (vertextShaderText, fragmentShaderText) {
@@ -297,7 +372,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.1 },
+        density: { type: 'f', value: 0.01 },
         texture1: { type: 't', value: null }
       },
       transparent: true,
@@ -343,9 +418,14 @@ var ForceDirectedGraph;
       x: (nodeId % this.tWidth) * this.twInv + this.twOff,
       y: Math.floor(nodeId / this.tWidth) * this.thInv + this.thOff
     };
-    // console.log(nodeId)
-    // console.log(out.x, out.y)
     return out;
+  }
+
+  Proto.getNodeId = function (x, y) {
+    x = Math.round((x - this.twOff) * this.tWidth);
+    y = Math.round((y - this.thOff) * this.tHeight);
+    // console.log(y * this.tWidth + x)
+    return y * this.tWidth + x;
   }
 
   Proto.generateRandomEdges = function () {
