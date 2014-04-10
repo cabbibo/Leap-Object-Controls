@@ -6,6 +6,7 @@
  * In order to create the camera, so that you can place the 
  * UI elements
  *
+ * TODO: Add a places traveled array which will only be of a certain length
  *
  */
 
@@ -46,7 +47,7 @@ THREE.LeapSpringControls = function ( object , controller , scene , domElement )
   this.placesTraveled   = [];
   
 
-  // Creates the Target Object ( object that will tween to anchor
+  // Creates the Target Object ( object that will tween to anchor )
   this.target = new THREE.Object3D();
   this.targetIndicator = new THREE.Mesh( 
     new THREE.IcosahedronGeometry( this.size / 250 , 1 ), 
@@ -56,11 +57,11 @@ THREE.LeapSpringControls = function ( object , controller , scene , domElement )
   this.scene.add( this.target );
 
 
-  // Creates the Anchor Object ( object hat will switch instantly )
+  // Creates the Anchor Object ( object that will switch instantly )
   this.anchor = new THREE.Object3D();
   this.anchorIndicator = new THREE.Mesh( 
-    new THREE.IcosahedronGeometry( this.size/200 , 1 ),
-    new THREE.MeshBasicMaterial({ color:0x00ff00  }) 
+    new THREE.IcosahedronGeometry( this.size/10, 1 ),
+    new THREE.MeshBasicMaterial({ color:0xffffff  }) 
   );
   //this.anchor.add( this.anchorIndicator ); // Uncomment , so show where target is tweening
   this.scene.add( this.anchor );
@@ -152,13 +153,19 @@ THREE.LeapSpringControls = function ( object , controller , scene , domElement )
 
         this.fingerIndicator.position = position;
 
+        /*
+         
+           If the user is pinching, add
+
+        */
         var pinchStrength = this.frame.hands[0].pinchStrength;
         if( pinchStrength > .5 ){
     
           this.target.position = position;
 
-          this.placesTraveled.push( position );
- 
+          //Uncomment to keep track of places traveled ( MEMORY LEAK WARNING )
+          //this.placesTraveled.push( position ); 
+       
         }
 
       }else{
@@ -198,7 +205,7 @@ THREE.LeapSpringControls = function ( object , controller , scene , domElement )
     a.z   = a.z - ( a.z - t.z ) / this.anchorToTarget;
    
 
-    // Get and apply the spring photos
+    // Get and apply the spring forces
     f = this.getForce();
     this.applyForce( f );
 

@@ -107,6 +107,7 @@
   <script src="../src/ForceDirectedGraph.js"></script>
   <script src="../src/GpuMaterial.js"></script>
   <script src="../src/LeapUtils.js"></script>
+  <script src="../src/TextCreator.js"></script>
 
   <script>
     if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -184,9 +185,9 @@
       scene.add( gFingerMarker );
       gFingerMarker.position = gFingerPos;
 
+      //controls = new THREE.LeapClutchControls(world, controller);
+      controls = new THREE.TrackballControls( camera );
 
-      controls = new THREE.LeapClutchControls(world, controller);
-      // controls = new THREE.LeapSpringControls( camera, controller, scene );
 
       renderer = new THREE.WebGLRenderer();
       // _gl = renderer.context;
@@ -202,50 +203,44 @@
 
      
         var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
-        graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs);
-        // graph.init(6, edges); controls.translationSpeed = 0.05; camera.position.z = 100;
-        // graph.init(3600, 18000);
-        // graph.parseDot(document.querySelector('textarea').value);
-        // graph.lines.visible = false;
-        
-        // graph.init(1000, grid3(10, 10, 10))
-        // graph.init(20*20*20, grid3(20, 20, 20));
-        // graph.init(2*2*2, grid3(2,2,2));
-        // graph.init(31, balancedTree(4, 2))
-        // graph.init(2047, balancedTree(10, 2))
-        // graph.init(8191, balancedTree(12, 2))
-        // graph.init(16383, balancedTree(13, 2))
-        // graph.init(4, balancedTree(1, 3))
-        // graph.init(13, balancedTree(2, 3))
-        // graph.init(1093, balancedTree(6, 3))
-        // graph.init(9841, balancedTree(8, 3))
-        // graph.init(1025, sphere(1024))
-        // graph.init(101, sphere(100))
 
-       
-
-        // setupQuad(graph.dims[0], graph.dims[1]);
+      var textCreator = new TextCreator();
+      graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs , textCreator );
+            
+      graph.init(1000, grid3(10, 10, 10))
+      // graph.init(20*20*20, grid3(20, 20, 20));
+      // graph.init(2*2*2, grid3(2,2,2));
+      // graph.init(31, balancedTree(4, 2))
+      // graph.init(2047, balancedTree(10, 2))
+      // graph.init(8191, balancedTree(12, 2))
+      // graph.init(16383, balancedTree(13, 2))
+      // graph.init(4, balancedTree(1, 3))
+      // graph.init(13, balancedTree(2, 3))
+      // graph.init(1093, balancedTree(6, 3))
+      // graph.init(9841, balancedTree(8, 3))
+      // graph.init(1025, sphere(1024))
+      // graph.init(101, sphere(100))
+    }
+    
+    function grid3(n, m, z) {
+      if (n < 1 || m < 1 || z < 1) {
+        throw new Error("Invalid number of nodes in grid3 graph");
       }
-      
-      function grid3(n, m, z) {
-        if (n < 1 || m < 1 || z < 1) {
-          throw new Error("Invalid number of nodes in grid3 graph");
-        }
-        var g = [],
-            i, j, k;
+      var g = [],
+          i, j, k;
 
-        for (k = 0; k < z; ++k) {
-          for (i = 0; i < n; ++i) {
-            for (j = 0; j < m; ++j) {
-              var level = k * n * m;
-              var node = i + j * n + level;
-              if (i > 0) { g.push(node, i - 1 + j * n + level); }
-              if (j > 0) { g.push(node, i + (j - 1) * n + level); }
-              if (k > 0) { g.push(node, i + j * n + (k - 1) * n * m ); }
-            }
+      for (k = 0; k < z; ++k) {
+        for (i = 0; i < n; ++i) {
+          for (j = 0; j < m; ++j) {
+            var level = k * n * m;
+            var node = i + j * n + level;
+            if (i > 0) { g.push(node, i - 1 + j * n + level); }
+            if (j > 0) { g.push(node, i + (j - 1) * n + level); }
+            if (k > 0) { g.push(node, i + j * n + (k - 1) * n * m ); }
           }
         }
-      return g;
+      }
+    return g;
     }
 
     function sphere(n) {
@@ -310,7 +305,21 @@
       }
       tmp3.copy(gFingerPos);
       world.worldToLocal(tmp3);
-      // graph.setHighlightPos(tmp3);
+      graph.setHighlightPos(tmp3);
+
+      var tmp = new THREE.Vector3(0 , 1, 0);
+      // Making textNodes look at camera
+      for( var i=0;i<graph.textNodes.length; i++ ){
+               graph.textNodes[i].matrix.lookAt( graph.textNodes[i].position ,camera.position , camera.up );
+        var quat = new THREE.Quaternion().setFromRotationMatrix( graph.textNodes[i].matrix );
+       // graph.textNodes[i].rotation.setFromQuaternion( quat );
+
+        if( i > graph.textNodes.length / 10 ){
+
+         // graph.textNodes[i].visible = false;
+          
+        }
+      }
     }
 
     var isPaused = false;
