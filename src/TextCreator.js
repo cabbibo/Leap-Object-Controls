@@ -9,6 +9,7 @@
     this.params.color = p.color || "rgba( 255 , 255 , 255 , 0.95 )";
     this.params.crispness = p.crispness || 10;
 
+    this.geo = new THREE.PlaneGeometry( 1 , 1 );
     this.randomWords = [
 
       "V2",
@@ -26,7 +27,7 @@
 
 
     ];
- 
+
     
   }
 
@@ -101,11 +102,16 @@
       side:         THREE.DoubleSide
     });
 
+ 
     var geo = new THREE.PlaneGeometry( 
-      canvas.width  / scaleFactor, 
-      canvas.height / scaleFactor
+        
+        canvas.width  / scaleFactor,
+        canvas.height / scaleFactor
     );
-    var mesh = new THREE.Mesh(geo, material);
+
+    var mesh = new THREE.Mesh( geo, material);
+    //mesh.scale.x = canvas.width  / scaleFactor,
+    //mesh.scale.y = canvas.height / scaleFactor
     
     // Assigning the texture
     mesh.string = string;
