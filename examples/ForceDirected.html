@@ -46,12 +46,13 @@
       vec3 pos2 = texture2D(texture1, color.zw).xyz;
       gl_PointSize = 1.0;
       if (firstVertex > 0.5) {
-        vForce = density * (pos2 - pos1);
+        vForce = (density * (pos2 - pos1));
         gl_Position = vec4(color.x * 2. - 1., color.y * 2. - 1., 0., 1.);
       } else {
-        vForce = density * (pos1 - pos2);
+        vForce = (density * (pos1 - pos2));
         gl_Position = vec4(color.z * 2. - 1., color.w * 2. - 1., 0., 1.);
       }
+      // vForce = clamp(vForce, vec3(-2.5), vec3(2.5));
     }
   </script>
 
@@ -83,10 +84,11 @@
               vec4 oPos = texture2D(tPosition, vec2(x, y));
               vec3 diff = pos.xyz - oPos.xyz;
               float a = length(diff) + 10.;
-              f += diff / (a * a * a);
+              f += oPos.a * diff / (a * a * a);
             }
           }
         }
+        // f = clamp(f, vec3(-2.5), vec3(2.5));
         vec3 newPos = pos.xyz + fl + f * strength;
         gl_FragColor = vec4(newPos.xyz, pos.a);
       } else {
@@ -125,6 +127,34 @@
     window.addEventListener('load', function () {
       init();
       animate();
+      function cancel(e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      
+      window.addEventListener('dragover', cancel, false);
+      window.addEventListener('dragenter', cancel, false);
+      window.addEventListener('drop', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        var dt = e.dataTransfer;
+        var files = dt.files;
+        
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              // console.log(e.target.result)
+              world.position.set(0,0,0);
+              graph.reset();
+              // graph.parseDot(e.target.result);
+              graph.parseGrp(e.target.result);
+            }
+            reader.readAsText(file);
+          }
+        
+      }, false);
     }, false);
 
     function init() {
@@ -136,8 +166,8 @@
       stats.domElement.style.top = '0px';
       container.appendChild(stats.domElement);
 
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 10, 10000);
-      camera.position.z = 100;
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+      camera.position.z = 50;
 
       scene = new THREE.Scene();
       world = new THREE.Object3D();
@@ -156,7 +186,7 @@
 
 
       controls = new THREE.LeapClutchControls(world, controller);
-      //controls = new THREE.TrackballControls( camera );
+      // controls = new THREE.LeapSpringControls( camera, controller, scene );
 
       renderer = new THREE.WebGLRenderer();
       // _gl = renderer.context;
@@ -180,7 +210,7 @@
         
         // graph.init(1000, grid3(10, 10, 10))
         // graph.init(20*20*20, grid3(20, 20, 20));
-        graph.init(2*2*2, grid3(2,2,2));
+        // graph.init(2*2*2, grid3(2,2,2));
         // graph.init(31, balancedTree(4, 2))
         // graph.init(2047, balancedTree(10, 2))
         // graph.init(8191, balancedTree(12, 2))
@@ -269,8 +299,8 @@
           var t = frame.hands[0].fingers[0].tipPosition;
           // var p = LeapUtils.leapToScene( t , frame , 1000 );
 
-          LeapUtils.leapToFrustum(t, frame, 60, 0, 1000, gFingerPos);
-
+          LeapUtils.leapToFrustum(t, frame, 60, 0, 2000, gFingerPos);
+          gFingerPos.add(camera.position);
           // gFingerPos;
         }else{
           gFingerPos.x = Infinity;
@@ -280,16 +310,19 @@
       }
       tmp3.copy(gFingerPos);
       world.worldToLocal(tmp3);
-      graph.setHighlightPos(tmp3);
+      // graph.setHighlightPos(tmp3);
     }
 
+    var isPaused = false;
     function render() {
       controls.update();
       leapUpdate();
 
-      graph.computeForces();
-      graph.updatePositions();
-      graph.runPicker();
+      if (graph.inited && !isPaused) {
+        graph.computeForces();
+        graph.updatePositions();
+        // graph.runPicker();
+      }
 
       renderer.render(scene, camera);
     }
