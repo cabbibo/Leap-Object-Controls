@@ -58,7 +58,7 @@
 
     // If you want a margin, you can define it in the params
     if( !params.margin )
-      margin = size * .5;
+      margin = size * .5 * params.crispness;
 
     // Gets how wide the tesxt is
     ctx.font      = fullSize + "pt Arial";
