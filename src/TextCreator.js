@@ -7,11 +7,10 @@
     this.params.size = p.size || 5;
     this.params.type = p.size || "Bold 20px Arial";
     this.params.color = p.color || "rgba( 255 , 255 , 255 , 0.95 )";
-    this.params.crispness = p.crispness || 10;
+    this.params.crispness = p.crispness || 20;
 
     this.geo = new THREE.PlaneGeometry( 1 , 1 );
     this.randomWords = [
-
       "V2",
       "Rigged Hand",
       "Developer Love",
@@ -24,20 +23,15 @@
       "Framework",
       "Magic",
       "ARM LINUX",
-
-
     ];
-
-    
   }
 
   TextCreator.prototype.randomWord = function(){
-
-
     var id = Math.floor( Math.random() * this.randomWords.length );
 
     return this.randomWords[id];
   }
+  
   TextCreator.prototype.createMesh = function( string , params ){
 
     var canvas    = document.createElement('canvas');
@@ -110,6 +104,7 @@
     );
 
     var mesh = new THREE.Mesh( geo, material);
+    mesh.frustumCulled = false;
     //mesh.scale.x = canvas.width  / scaleFactor,
     //mesh.scale.y = canvas.height / scaleFactor
     

@@ -33,6 +33,8 @@
   <script src="../lib/Detector.js"></script>
   <script src="../lib/stats.min.js"></script>
   <script src="../lib/dat.gui.min.js"></script>
+  <script src="../lib/dotgraph.js"></script>
+  <script src="../lib/dotparser.js"></script>
 
   <script id="vertexShaderFDG" type="x-shader/x-vertex">
     uniform sampler2D texture1;
@@ -84,7 +86,7 @@
               vec4 oPos = texture2D(tPosition, vec2(x, y));
               vec3 diff = pos.xyz - oPos.xyz;
               float a = length(diff) + 10.;
-              f += oPos.a * diff / (a * a * a);
+              f += oPos.a * diff / pow(a, 2.5);
             }
           }
         }
@@ -185,8 +187,8 @@
       scene.add( gFingerMarker );
       gFingerMarker.position = gFingerPos;
 
-      //controls = new THREE.LeapClutchControls(world, controller);
-      controls = new THREE.TrackballControls( camera );
+      controls = new THREE.LeapClutchControls(world, controller);
+      // controls = new THREE.TrackballControls( camera );
 
 
       renderer = new THREE.WebGLRenderer();
@@ -202,12 +204,12 @@
       var pfs = document.getElementById('fragmentShaderFDGPos').textContent;
 
      
-        var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
+      var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
 
       var textCreator = new TextCreator();
       graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs , textCreator );
             
-      graph.init(1000, grid3(10, 10, 10))
+      // graph.init(1000, grid3(10, 10, 10))
       // graph.init(20*20*20, grid3(20, 20, 20));
       // graph.init(2*2*2, grid3(2,2,2));
       // graph.init(31, balancedTree(4, 2))
@@ -309,16 +311,18 @@
 
       var tmp = new THREE.Vector3(0 , 1, 0);
       // Making textNodes look at camera
-      for( var i=0;i<graph.textNodes.length; i++ ){
-               graph.textNodes[i].matrix.lookAt( graph.textNodes[i].position ,camera.position , camera.up );
-        var quat = new THREE.Quaternion().setFromRotationMatrix( graph.textNodes[i].matrix );
+      // var m = new THREE.Matrix4();
+      // m.getInverse(world.matrixWorld)
+      for( var i = 0; i < graph.textNodes.length; i++ ){
+        // graph.textNodes[i].rotation.setFromRotationMatrix( m );
+            // graph.textNodes[i].quaternion.copy(world.quaternion).inverse();
+               // graph.textNodes[i].matrix.lookAt( graph.textNodes[i].position ,camera.position , camera.up );
+        // var quat = new THREE.Quaternion().setFromRotationMatrix( graph.textNodes[i].matrix );
        // graph.textNodes[i].rotation.setFromQuaternion( quat );
 
-        if( i > graph.textNodes.length / 10 ){
-
-         // graph.textNodes[i].visible = false;
-          
-        }
+        // if( i > graph.textNodes.length / 10 ){
+        //   graph.textNodes[i].visible = false;
+        // }
       }
     }
 

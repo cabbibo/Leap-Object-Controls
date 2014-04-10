@@ -23,11 +23,15 @@ var ForceDirectedGraph;
   Proto.reset = function () {
     this.scene.remove(this.lines);
     this.scene.remove(this.particles);
+    for (var i = 0; i < this.textNodes.length; i++) {
+      this.scene.remove(this.textNodes[i]);
+    }
     this.inited = false;
   }
 
-  Proto.init = function (nodeCount, edges) {
-    this.nodeCount = nodeCount;
+  Proto.init = function (nodes, edges) {
+    this.nodes = nodes;
+    this.nodeCount = nodes.length || nodes;
     this.edges = edges;
     this.edgeCount = edges.length || edges;
 
@@ -35,30 +39,10 @@ var ForceDirectedGraph;
     this.copyMaterial = null;
     this.setupCopyShader();
 
-    var dims = getTextureSize(nodeCount);
+    var dims = getTextureSize(this.nodeCount);
 
-    console.log( dims );
+    // console.log( dims );
     this.setDimensions(dims[0], dims[1]);
-
-    
-    /*
-    
-       Setting up Text
-
-    */
-    for( var i = 0; i < nodeCount; i++ ){
-
-      var x = i % dims[0];
-      var y = Math.floor( i / dims[0] );
-
-      var uv   = [ x / dims[0] , y / dims[1] ];
-      var text = this.textCreator.randomWord();
-      var mesh = this.createText( text , i );
-      scene.add( mesh );
-
-    }
-
-
 
     this.rt0 = getRenderTarget(dims[0], dims[1]);
     this.rt1 = this.rt0.clone();
@@ -80,36 +64,61 @@ var ForceDirectedGraph;
     }
     this.setupLines();
     this.setupParticles();
+    this.setupText();
     this.inited = true;
   }
+
+  // Proto.parseDot = function (dotStr) {
+  //   var NID = 0;
+  //   var nodes = {};
+  //   var nodeArr = [];
+  //   var edges = [];
+  // 
+  //   // var regex = /\s*"?([^"]*?)"?\s*-[>-]\s*"?([^"]*?)"?/g;
+  //   var regex = /\s*"?(\w*)"?\s*-[>-]\s*"?(\w*)"?/g;
+  //   var match;
+  //   while ((match = regex.exec(dotStr)) !== null) {
+  //     var nid1 = nodes[match[1]];
+  //     if (nid1 == undefined) {
+  //       nodeArr.push({id: NID, text: match[1]});
+  //       nid1 = nodes[match[1]] = NID++;
+  //     }
+  //     var nid2 = nodes[match[2]];
+  //     if (nid2 == undefined) {
+  //       nodeArr.push({id: NID, text: match[2]});
+  //       nid2 = nodes[match[2]] = NID++;
+  //     }
+  //     edges.push(nid1, nid2);
+  //     // console.log(match[1], '*', match[2]);
+  //     // console.log(nid1, nid2);
+  //   }
+  //   console.log(NID);
+  //   this.init(nodeArr, edges);
+  //   // console.log(this.nodes)
+  //   // console.log(edges)
+  // }
 
   Proto.parseDot = function (dotStr) {
     var NID = 0;
     var nodes = {};
-    this.nodes = [];
+    var nodeArr = [];
     var edges = [];
-
-    // var regex = /\s*"?([^"]*?)"?\s*-[>-]\s*"?([^"]*?)"?/g;
-    var regex = /\s*(\w*)\s*-[>-]\s*(\w*)/g;
-    var match;
-    while ((match = regex.exec(dotStr)) !== null) {
-      var nid1 = nodes[match[1]];
-      if (nid1 == undefined) {
-        this.nodes.push({id: NID, text: match[1]});
-        nid1 = nodes[match[1]] = NID++;
-      }
-      var nid2 = nodes[match[2]];
-      if (nid2 == undefined) {
-        this.nodes.push({id: NID, text: match[2]});
-        nid2 = nodes[match[2]] = NID++;
-      }
-      edges.push(nid1, nid2);
-      // console.log(match[1], '*', match[2]);
-      // console.log(nid1, nid2);
+    var ast = DotParser.parse(dotStr);
+    var graph = new DotGraph(ast);
+    graph.walk();
+    console.log(graph);
+    
+    for (var k in graph.nodes) {
+      nodes[k] = NID++;
+      nodeArr.push(graph.nodes[k].attrs.label || k);
     }
-    console.log(NID);
-    this.init(NID, edges);
-    // console.log(edges)
+
+    for (k in graph.edges) {
+      var p = k.split(',');
+      edges.push(nodes[p[0]], nodes[p[1]]);
+    }
+    console.log(NID, nodeArr);
+    this.init(nodeArr, edges);
   }
 
   Proto.parseGrp = function (dotStr) {
@@ -178,8 +187,8 @@ var ForceDirectedGraph;
        UPDATE TEXTURE POSITION UNIFORMS
     
     */
-    for( var i = 0; i < this.textNodes; i++ ){
-      this.textNodes.updatePositionTexture( output );
+    for( var i = 0; i < this.textNodes.length; i++ ){
+      this.textNodes[i].updatePositionTexture( output );
     }
   }
 
@@ -203,10 +212,12 @@ var ForceDirectedGraph;
       'uniform sampler2D tPosition;',
       'uniform vec3 fPos;', // Finger Position
       'varying float vDistance;',
+      'varying vec3 vColor;',
       'attribute vec2 color;',
       'void main(){',
       '  vec4 pos =  vec4( texture2D(tPosition, color.xy).xyz, 1.0 );',
       '  vDistance = length(fPos.xyz - pos.xyz);',
+      '  vColor = mix(vec3(1.,0.3,0.3), vec3(0.3,0.3,1.), position.x);',
       '	 vec4 mvPosition = modelViewMatrix * pos;',
       '	 gl_Position = projectionMatrix * mvPosition;',
       '}'
@@ -214,8 +225,9 @@ var ForceDirectedGraph;
 
 	var fs = [
       'varying float vDistance;',
+      'varying vec3 vColor;',
       'void main(){',
-      '  gl_FragColor = vec4( 1. , 1. , 1. , 0.5 );',
+      '  gl_FragColor = vec4( vColor, 0.5 );',
       // '  gl_FragColor.a *= max( 0.3 , (1.0 - vDistance/200.0 ) );',
       '}'
     ].join('\n');
@@ -248,6 +260,11 @@ var ForceDirectedGraph;
       vertexShader: vs,
       fragmentShader: fs
     });
+    
+    var attrs = geometry.attributes.position.array;
+    for (var i = 0; i < attrs.length; i += 3) {
+      attrs[i] = (i / 3) % 2;
+    }
 
     lineMaterial.index0AttributeName = 'color';
     lineMaterial.linewidth = 1;
@@ -440,7 +457,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.1 },
+        density: { type: 'f', value: 0.005 },
         texture1: { type: 't', value: null }
       },
       transparent: true,
@@ -540,6 +557,19 @@ var ForceDirectedGraph;
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.copyMaterial);
     this.copyScene.add(mesh);
   };
+  
+  
+  /*
+  
+     Setting up Text
+
+  */
+  Proto.setupText = function(){
+    for( var i = 0, l = this.nodes.length; i < l; i++ ) {
+      var mesh = this.createText( this.nodes[i] , i );
+      this.scene.add( mesh );
+    }
+  }
 
   /*
    
@@ -625,7 +655,7 @@ var ForceDirectedGraph;
 
     m.updatePositionTexture = function( t ){
 
-      console.log( this );
+      // console.log( this );
       this.material.uniforms.tPosition.value = t;
       this.material.needsUpdate = true;
 
@@ -633,7 +663,6 @@ var ForceDirectedGraph;
 
     this.textNodes.push( m );
     return m;
-
   }
 
   function getRenderTarget(width, height) {
