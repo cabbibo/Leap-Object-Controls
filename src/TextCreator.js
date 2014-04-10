@@ -4,25 +4,49 @@
     this.params = {}
     p = params || {};
    
-    this.params.size = p.size || 20;
+    this.params.size = p.size || 5;
     this.params.type = p.size || "Bold 20px Arial";
     this.params.color = p.color || "rgba( 255 , 255 , 255 , 0.95 )";
     this.params.crispness = p.crispness || 10;
+
+    this.randomWords = [
+
+      "V2",
+      "Rigged Hand",
+      "Developer Love",
+      "Skeletal",
+      "OOBE",
+      "Airspace",
+      "Stome",
+      "Community",
+      "Developers",
+      "Framework",
+      "Magic",
+      "ARM LINUX",
+
+
+    ];
  
     
   }
 
+  TextCreator.prototype.randomWord = function(){
+
+
+    var id = Math.floor( Math.random() * this.randomWords.length );
+
+    return this.randomWords[id];
+  }
   TextCreator.prototype.createMesh = function( string , params ){
 
-    var canvas  = document.createElement('canvas');
-    var ctx     = canvas.getContext( '2d' ); 
-    var params  = _.defaults( params || {}, {
-      
-      color:      this.params.color,
-      size:       this.params.size,
-      crispness:  this.params.crispness
-          
-    });
+    var canvas    = document.createElement('canvas');
+    var ctx       = canvas.getContext( '2d' ); 
+    
+    
+    var params        = params                  || {};
+    params.color      = this.params.color       || params.color;
+    params.size       = this.params.size        || params.size;
+    params.crispness  = this.params.crispness   || params.crispness;
 
 
     var size   = params.size;
