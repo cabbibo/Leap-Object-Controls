@@ -602,10 +602,12 @@ var ForceDirectedGraph;
     
       '   vUv = uv;',
       '   vec3 pos = texture2D( tPosition , uvPos ).xyz;',
-      '   pos += position;',
+      //'   pos += position;',
       
-      '	  vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
-	  '	  gl_Position = projectionMatrix * mvPosition;',
+      '	  vec4 mvPosition = modelViewMatrix * vec4( position , 1.0 );',
+      '   vec4 mvPos = modelViewMatrix * vec4( pos , 1.0 );',
+      '   vec4 a = mvPos + vec4( position , 1.0 );',
+	  '	  gl_Position = projectionMatrix * a;',
 	  //'	  gl_Position =  mvPosition;',
 
       '}'

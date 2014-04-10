@@ -119,9 +119,9 @@
 
           var index = j + (i*5);
 
-          if( this.frame.fingers[index] ){
+          if( hand.fingers[j] ){
 
-            var leapFinger  = this.frame.fingers[ index ];
+            var leapFinger  = hand.fingers[j];
             var fConnections = this.connections[ index ];
             var fJoints     = this.joints[ index ];
 

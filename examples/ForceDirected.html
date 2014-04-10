@@ -109,7 +109,7 @@
   <script src="../src/ForceDirectedGraph.js"></script>
   <script src="../src/GpuMaterial.js"></script>
   <script src="../src/LeapUtils.js"></script>
-  <!-- // <script src="../src/RainbowHand.js"></script> -->
+   <script src="../src/RainbowHand.js"></script>
   <script src="../src/TextCreator.js"></script>
 
   <script>
@@ -193,8 +193,8 @@
       controls = new THREE.LeapClutchControls(world, controller);
       // controls = new THREE.TrackballControls( camera );
 
-      // rainbowHand = new RainbowHand( controller );
-      // scene.add( rainbowHand.object );
+      rainbowHand = new RainbowHand( controller );
+      scene.add( rainbowHand.object );
 
 
       renderer = new THREE.WebGLRenderer();
