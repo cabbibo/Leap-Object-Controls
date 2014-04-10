@@ -1,7 +1,7 @@
 var ForceDirectedGraph;
 (function () {
 
-  ForceDirectedGraph = function (renderer, scene, vertextShaderText, fragmentShaderText, posFS) {
+  ForceDirectedGraph = function (renderer, scene, vertextShaderText, fragmentShaderText, posFS , textCreator ) {
     this.renderer = renderer;
     this.scene = scene;
     this.camera = new THREE.Camera();
@@ -10,6 +10,10 @@ var ForceDirectedGraph;
     this.fragmentShaderText = fragmentShaderText;
     this.posFS = posFS;
     this.highlightPos = new THREE.Vector3();
+
+    // For Text
+    this.textNodes = [];
+    this.textCreator = textCreator;
   }
 
   var Proto = ForceDirectedGraph.prototype;
@@ -25,6 +29,7 @@ var ForceDirectedGraph;
 
 
     var dims = getTextureSize(nodeCount);
+    console.log( dims );
     this.setDimensions(dims[0], dims[1]);
 
     this.rt0 = getRenderTarget(dims[0], dims[1]);
@@ -68,6 +73,8 @@ var ForceDirectedGraph;
       // console.log(nid1, nid2);
     }
     // console.log(NID);
+    //
+    console.log( nodes );
     this.init(NID, edges);
     // console.log(edges)
   }
@@ -107,6 +114,19 @@ var ForceDirectedGraph;
     this.renderer.render(this.positionScene, this.camera, output);
     this.output = output;
     this.particles.material.uniforms.tPosition.value = output;
+
+    /*
+
+       UPDATE TEXTURE POSITION UNIFORMS
+    
+    */
+    for( var i = 0; i < this.textNodes; i++ ){
+      this.textNodes.updatePositionTexture( output );
+    }
+
+
+
+
   }
 
   Proto.setHighlightPos = function (pos) {
@@ -470,6 +490,57 @@ var ForceDirectedGraph;
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.copyMaterial);
     this.copyScene.add(mesh);
   };
+
+  Proto.createText = function( text , uv ){
+
+    var mesh      = this.textCreator.createMesh( text );
+    var uv        = new THREE.Vector2().fromArray( uv );
+
+    var uniforms  = {
+
+      tPosition:{type:"t",value:null},
+      texture:{type:"t",value:texture},
+      uvPos:{type:"v2",value:uv}
+
+    }
+
+    var vertShader = [
+      'uniform vec2 uvPos;'
+      'uniform sampler2D tPosition;',
+  
+      'varying vec2 vUv;',
+
+      'void main(){',
+    
+      '   vec3 pos = texture2D( tPosition , uvPos );',
+      '   pos += position;',
+      
+      '	  vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
+	  '	  gl_Position = projectionMatrix * mvPosition;',
+
+      '}'
+    ].join("\n");
+
+    var fragShader = [
+      'uniform vec2 uvPos;'
+      'uniform sampler2D tPosition;',
+  
+      'varying vec2 vUv;',
+
+      'void main(){',
+    
+      '   vec3 pos = texture2D( tPosition , uvPos );',
+      '   pos += position;',
+      
+      '	  vec4 mvPosition = modelViewMatrix * vec4( pos , 1.0 );',
+	  '	  gl_Position = projectionMatrix * mvPosition;',
+
+      '}'
+    ].join("\n");
+
+
+
+  }
 
   function getRenderTarget(width, height) {
     var renderTarget = new THREE.WebGLRenderTarget(width, height, {
