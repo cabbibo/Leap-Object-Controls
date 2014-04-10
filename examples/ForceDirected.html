@@ -107,6 +107,7 @@
   <script src="../src/ForceDirectedGraph.js"></script>
   <script src="../src/GpuMaterial.js"></script>
   <script src="../src/LeapUtils.js"></script>
+  <script src="../src/RainbowHand.js"></script>
   <script src="../src/TextCreator.js"></script>
 
   <script>
@@ -124,6 +125,8 @@
 
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
+
+    var rainbowHand;  // RIGGEDHANDRIGGEDHANDRIGGEDHANDRIGGEDHAND
 
     window.addEventListener('load', function () {
       init();
@@ -185,8 +188,11 @@
       scene.add( gFingerMarker );
       gFingerMarker.position = gFingerPos;
 
-      //controls = new THREE.LeapClutchControls(world, controller);
-      controls = new THREE.TrackballControls( camera );
+      controls = new THREE.LeapClutchControls(world, controller);
+      //controls = new THREE.TrackballControls( camera );
+
+      rainbowHand = new RainbowHand( controller );
+      scene.add( rainbowHand.object );
 
 
       renderer = new THREE.WebGLRenderer();
@@ -202,7 +208,7 @@
       var pfs = document.getElementById('fragmentShaderFDGPos').textContent;
 
      
-        var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
+      var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
 
       var textCreator = new TextCreator();
       graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs , textCreator );
@@ -325,7 +331,9 @@
     var isPaused = false;
     function render() {
       controls.update();
+      rainbowHand.update();
       leapUpdate();
+
 
       if (graph.inited && !isPaused) {
         graph.computeForces();

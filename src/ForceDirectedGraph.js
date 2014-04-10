@@ -54,7 +54,7 @@ var ForceDirectedGraph;
       var uv   = [ x / dims[0] , y / dims[1] ];
       var text = this.textCreator.randomWord();
       var mesh = this.createText( text , i );
-      scene.add( mesh );
+      this.scene.add( mesh );
 
     }
 
@@ -618,7 +618,7 @@ var ForceDirectedGraph;
     );*/
     var m = mesh.clone();
 
-        m.material = material;
+    m.material = material;
     m.material.needsUpdate = true;
     m.id = id;
     m.uv = uv;
