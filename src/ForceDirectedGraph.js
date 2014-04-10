@@ -106,7 +106,6 @@ var ForceDirectedGraph;
     var ast = DotParser.parse(dotStr);
     var graph = new DotGraph(ast);
     graph.walk();
-    console.log(graph);
     
     for (var k in graph.nodes) {
       nodes[k] = NID++;
@@ -117,7 +116,7 @@ var ForceDirectedGraph;
       var p = k.split(',');
       edges.push(nodes[p[0]], nodes[p[1]]);
     }
-    console.log(NID, nodeArr);
+    // console.log(NID, nodeArr);
     this.init(nodeArr, edges);
   }
 
@@ -648,7 +647,7 @@ var ForceDirectedGraph;
     );*/
     var m = mesh.clone();
 
-        m.material = material;
+    m.material = material;
     m.material.needsUpdate = true;
     m.id = id;
     m.uv = uv;
