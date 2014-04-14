@@ -5,6 +5,7 @@
   <title>three.js webgl - gpgpu - flocking</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="../css/main.css">
   <style>
     body {
       background-color: #000000;
@@ -29,90 +30,49 @@
 </head>
 
 <body>
+  
+  <script src="../lib/underscore.js"></script>
+  <script src="../lib/jquery.min.js"></script>
   <script src="../lib/three.js"></script>
   <script src="../lib/Detector.js"></script>
   <script src="../lib/stats.min.js"></script>
   <script src="../lib/dat.gui.min.js"></script>
   <script src="../lib/dotgraph.js"></script>
   <script src="../lib/dotparser.js"></script>
-
-  <script id="vertexShaderFDG" type="x-shader/x-vertex">
-    uniform sampler2D texture1;
-    uniform float firstVertex;
-    uniform float density;
-    attribute vec4 color;
-    varying vec3 vForce;
-
-    void main() {
-      vec3 pos1 = texture2D(texture1, color.xy).xyz;
-      vec3 pos2 = texture2D(texture1, color.zw).xyz;
-      gl_PointSize = 1.0;
-      if (firstVertex > 0.5) {
-        vForce = (density * (pos2 - pos1));
-        gl_Position = vec4(color.x * 2. - 1., color.y * 2. - 1., 0., 1.);
-      } else {
-        vForce = (density * (pos1 - pos2));
-        gl_Position = vec4(color.z * 2. - 1., color.w * 2. - 1., 0., 1.);
-      }
-      // vForce = clamp(vForce, vec3(-2.5), vec3(2.5));
-    }
-  </script>
-
-  <script id="fragmentShaderFDG" type="x-shader/x-fragment">
-    varying vec3 vForce;
-    void main() {
-      gl_FragColor = vec4(vForce, 1.);
-    }
-  </script>
-
-  <script id="fragmentShaderFDGPos" type="x-shader/x-fragment">
-    varying vec2 vUv;
-    uniform sampler2D tPosition;
-    uniform sampler2D tForces;
-    uniform float strength;
-
-    const float d_width = 1. / ${WIDTH}.;
-    const float d_height = 1. / ${HEIGHT}.;
-
-    void main() {
-      vec4 pos = texture2D(tPosition, vUv);
-
-      if (pos.a > 0.5) {
-        vec3 fl = texture2D(tForces, vUv).xyz;
-        vec3 f = vec3(0.);
-        for (float y = d_height * 0.5; y < 1.0; y += d_height) {
-          if (texture2D(tPosition, vec2(0., y)).a > .5) {
-            for (float x = d_width * 0.5; x < 1.0; x += d_width) {
-              vec4 oPos = texture2D(tPosition, vec2(x, y));
-              vec3 diff = pos.xyz - oPos.xyz;
-              float a = length(diff) + 10.;
-              f += oPos.a * diff / pow(a, 2.5);
-            }
-          }
-        }
-        // f = clamp(f, vec3(-2.5), vec3(2.5));
-        vec3 newPos = pos.xyz + fl + f * strength;
-        gl_FragColor = vec4(newPos.xyz, pos.a);
-      } else {
-        gl_FragColor = vec4(0.);
-      }
-    }
-
-  </script>
-
   <script src="../lib/leap.min.js"></script>
-  <script src="../src/LeapClutchControls.js"></script>
-  <script src="../src/TrackballControls.js"></script>
-  <script src="../src/LeapTrackballControls.js"></script>
-  <script src="../src/LeapSpringControls.js"></script>
-  <script src="../src/LeapPaddleControls.js"></script>
-  <script src="../src/ForceDirectedGraph.js"></script>
-  <script src="../src/GpuMaterial.js"></script>
-  <script src="../src/LeapUtils.js"></script>
-   <script src="../src/RainbowHand.js"></script>
-  <script src="../src/TextCreator.js"></script>
+  
+
+  <script src="../src/LeapClutchControls.js"    ></script>
+  <script src="../src/TrackballControls.js"     ></script>
+  <script src="../src/LeapTrackballControls.js" ></script>
+  <script src="../src/LeapSpringControls.js"    ></script>
+  <script src="../src/LeapPaddleControls.js"    ></script>
+
+  <script src="../src/ForceDirectedGraph.js"    ></script>
+  <script src="../src/GpuMaterial.js"           ></script>
+
+  <script src="../src/LeapUtils.js"             ></script>
+  <script src="../src/RainbowHand.js"           ></script>
+  <script src="../src/TextCreator.js"           ></script>
+  <script src="../src/Loader.js"                ></script>
+
+  <script id="vs-edges"     type="x-shader/x-vertex"    data-src="../shaders/vs-edges.js" ></script>
+  <script id="fs-edges"     type="x-shader/x-fragment"  data-src="../shaders/fs-edges.js" ></script>
+  <script id="vs-nodes"     type="x-shader/x-vertex"    data-src="../shaders/vs-nodes.js" ></script>
+  <script id="fs-nodes"     type="x-shader/x-fragment"  data-src="../shaders/fs-nodes.js" ></script>
+  <script id="vs-lines"     type="x-shader/x-vertex"    data-src="../shaders/vs-lines.js" ></script>
+  <script id="fs-lines"     type="x-shader/x-fragment"  data-src="../shaders/fs-lines.js" ></script>
+  <script id="vs-particles" type="x-shader/x-vertex"    data-src="../shaders/vs-particles.js" ></script>
+  <script id="fs-particles" type="x-shader/x-fragment"  data-src="../shaders/fs-particles.js" ></script>
+  <script id="vs-picker"    type="x-shader/x-vertex"    data-src="../shaders/vs-picker.js" ></script>
+  <script id="fs-picker"    type="x-shader/x-fragment"  data-src="../shaders/fs-picker.js" ></script>
+  <script id="vs-copy"      type="x-shader/x-vertex"    data-src="../shaders/vs-copy.js" ></script>
+  <script id="fs-copy"      type="x-shader/x-fragment"  data-src="../shaders/fs-copy.js" ></script>
+
+
 
   <script>
+
     if (!Detector.webgl) Detector.addGetWebGLMessage();
 
     var container, stats;
@@ -123,16 +83,37 @@
     var gFingerMarker; // marker for LEAP_FINGER_POS
 
     var mouseX = 0,
-      mouseY = 0;
+        mouseY = 0;
 
     var windowHalfX = window.innerWidth / 2;
     var windowHalfY = window.innerHeight / 2;
 
     var rainbowHand;  // RIGGEDHANDRIGGEDHANDRIGGEDHANDRIGGEDHAND
 
+    var loader = new Loader();
+
+     
+    var vertexShaders       = $('script[type="x-shader/x-vertex"]');
+    var fragmentShaders     = $('script[type="x-shader/x-fragment"]');
+
+    loader.loadShader( 'edges',     vertexShaders[0]    , 'vertex'    );
+    loader.loadShader( 'edges',     fragmentShaders[0]  , 'fragment'  );
+    loader.loadShader( 'nodes',     vertexShaders[1]    , 'vertex'    );
+    loader.loadShader( 'nodes',     fragmentShaders[1]  , 'fragment'  );
+    loader.loadShader( 'lines',     vertexShaders[2]    , 'vertex'    );
+    loader.loadShader( 'lines',     fragmentShaders[2]  , 'fragment'  );
+    loader.loadShader( 'particles', vertexShaders[3]    , 'vertex'    );
+    loader.loadShader( 'particles', fragmentShaders[3]  , 'fragment'  );
+    loader.loadShader( 'picker',    vertexShaders[4]    , 'vertex'    );
+    loader.loadShader( 'picker',    fragmentShaders[4]  , 'fragment'  );
+    loader.loadShader( 'copy',      vertexShaders[5]    , 'vertex'    );
+    loader.loadShader( 'copy',      fragmentShaders[5]  , 'fragment'  );
+    
+    loader.endLoad(); // Gets things rolling
+
     window.addEventListener('load', function () {
-      init();
-      animate();
+      //init();
+      //animate();
       function cancel(e) {
         e.stopPropagation();
         e.preventDefault();
@@ -190,8 +171,8 @@
       scene.add( gFingerMarker );
       gFingerMarker.position = gFingerPos;
 
-      controls = new THREE.LeapClutchControls(world, controller);
-      // controls = new THREE.TrackballControls( camera );
+      //controls = new THREE.LeapClutchControls(world, controller);
+      controls = new THREE.TrackballControls( camera );
 
       rainbowHand = new RainbowHand( controller );
       scene.add( rainbowHand.object );
@@ -205,14 +186,14 @@
 
       container.appendChild(renderer.domElement);
 
-      var vst = document.getElementById('vertexShaderFDG').textContent;
-      var fst = document.getElementById('fragmentShaderFDG').textContent;
-      var pfs = document.getElementById('fragmentShaderFDGPos').textContent;
+      var vst = vs.edges;
+      var fst = fs.edges;
+      var pfs = fs.nodes;
 
      
       var edges = [0,1,0,2,1,3,2,3,0,4,1,4,2,4,3,4,0,5,1,5,2,5,3,5];
 
-      var textCreator = new TextCreator();
+      var textCreator = new TextCreator({size:5});
       graph = new ForceDirectedGraph(renderer, world, vst, fst, pfs , textCreator );
             
       // graph.init(1000, grid3(10, 10, 10))
@@ -228,6 +209,10 @@
       // graph.init(9841, balancedTree(8, 3))
       // graph.init(1025, sphere(1024))
       // graph.init(101, sphere(100))
+
+      loader.liftCurtain();
+      animate();
+
     }
     
     function grid3(n, m, z) {

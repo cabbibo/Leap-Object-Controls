@@ -1,13 +1,12 @@
 
   function TextCreator(params ){
 
-    this.params = {}
-    p = params || {};
-   
-    this.params.size = p.size || 5;
-    this.params.type = p.size || "Bold 20px Arial";
-    this.params.color = p.color || "rgba( 255 , 255 , 255 , 0.95 )";
-    this.params.crispness = p.crispness || 20;
+    this.params = _.defaults( params || {},{
+      size:5,
+      type:"Bold 20px Arial",
+      color:"rgba( 255 , 255 , 255 , 0.95 )",
+      crispness:5,
+    });
 
     this.geo = new THREE.PlaneGeometry( 1 , 1 );
     this.randomWords = [
