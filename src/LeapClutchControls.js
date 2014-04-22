@@ -6,44 +6,29 @@
 
 (function () {
   var PI_2 = Math.PI * 2;
-
-  var X_AXIS = new THREE.Vector3(1, 0, 0);
-  var Y_AXIS = new THREE.Vector3(0, 1, 0);
-  var Z_AXIS = new THREE.Vector3(0, 0, 1);
   
-  THREE.LeapClutchControls = function (object, controller, invert) {
+  THREE.LeapClutchControls = function (object, controller) {
     
     this.cameraModel = new Camera(object);
-    var transModulle = new TranslationModule();
+    var transModule = new TranslationModule();
     var rotModule = new RotationModule();
-    this.cameraModel.addModule(transModulle);
+    this.cameraModel.addModule(transModule);
     this.cameraModel.addModule(rotModule);
+    // transModule.friction = 0.01;
     
     this.object = object;
     this.controller = controller;
-    this.invert = (invert === undefined ? false : invert);
     this.anchorDelta = 1;
     
     this.translationSpeed = 3.8;
-    this.translationDecay = 0.8;
-    this.scaleDecay = 0.5;
-    this.rotationSlerp = 0.8;
     this.rotationSpeed = 2;
     this.pinchThreshold = 0.4;
     this.transSmoothing = 0.8;
     this.rotationSmoothing = 0.2;
     
     this.vector = new THREE.Vector3();
-    this.vector2 = new THREE.Vector3();
-    this.matrix = new THREE.Matrix4();
-    this.quaternion = new THREE.Quaternion();
-    this.quaternion2 = new THREE.Quaternion();
-    this.translationMomentum = new THREE.Vector3();
-    this.scaleMomentum = new THREE.Vector3(1, 1, 1);
-    this.rotationMomentum = this.object.quaternion.clone();
     this.transLP = new LowPassFilter(this.transSmoothing, 3);
     this.rotLP = new LowPassFilter(this.rotationSmoothing, 3);
-
   }
   
   var Proto = THREE.LeapClutchControls.prototype;
@@ -61,7 +46,6 @@
     if (!frame || !frame.valid || !anchorFrame || !anchorFrame.valid) {
       return;
     }
-    
     
     // match hands to anchors
     var rawHands = frame.hands;
@@ -88,11 +72,6 @@
       if (this.shouldRotate(anchorHands, hands)) {
         this.applyRotation(anchorHands, hands);
       }
-      
-      // scale
-      if (this.shouldScale(anchorHands, hands)) {
-        this.applyScale(anchorHands, hands);
-      }
     }
 
     this.cameraModel.step();
@@ -101,11 +80,6 @@
   Proto.shouldTranslate = function (anchorHands, hands) {
     var isEngaged = this.isEngaged.bind(this);
     return hands.some(isEngaged);
-  }
-  
-  Proto.shouldScale = function (anchorHands, hands) {
-    var isEngaged = this.isEngaged.bind(this);
-    return hands.length >= 2 && hands.every(isEngaged) && anchorHands.every(isEngaged);
   }
   
   Proto.shouldRotate = function (anchorHands, hands) {
@@ -124,8 +98,6 @@
     this.vector.fromArray(translation);
     this.vector.multiplyScalar(this.translationSpeed);
     this.vector.negate();
-
-     
     this.cameraModel.update({velocity: this.vector});
   }
   
@@ -138,11 +110,6 @@
     this.cameraModel.update({rotation: this.vector});
   }
   
-  Proto.applyScale = function (anchorHands, hands) {
-    var scale = this.getScale(anchorHands, hands);
-    this.scaleMomentum.multiplyScalar(scale[3]);
-  }
-  
   Proto.getTranslation = function(anchorHands, hands) {
     if (anchorHands.length != hands.length) {
       return [0, 0, 0];
@@ -153,25 +120,6 @@
       centerCurrent[0] - centerAnchor[0],
       centerCurrent[1] - centerAnchor[1],
       centerCurrent[2] - centerAnchor[2]
-    ];
-  }
-  
-  Proto.getScale = function(anchorHands, hands) {
-    if (hands.length < 2 || anchorHands.length < 2) {
-      return [1, 1, 1, 1];
-    }
-    
-    var centerAnchor = getCenter(anchorHands);
-    var centerCurrent = getCenter(hands);
-    var aveRadiusAnchor = aveDistance(centerAnchor, anchorHands);
-    var aveRadiusCurrent = aveDistance(centerCurrent, hands);
-    
-    // scale of current over previous
-    return [
-      aveRadiusCurrent[0] / aveRadiusAnchor[0],
-      aveRadiusCurrent[1] / aveRadiusAnchor[1],
-      aveRadiusCurrent[2] / aveRadiusAnchor[2],
-      length(aveRadiusCurrent) / length(aveRadiusAnchor)
     ];
   }
   
@@ -278,45 +226,6 @@
     var az = dy * dy + dx * dx;
   
     return [ax, ay, az, mag];
-  }
-  
-  function aveDistance(center, hands) {
-    var aveDistance = [0, 0, 0];
-    hands.forEach(function (hand) {
-      var p = hand.palmPosition;
-      aveDistance[0] += Math.abs(p[0] - center[0]);
-      aveDistance[1] += Math.abs(p[1] - center[1]);
-      aveDistance[2] += Math.abs(p[2] - center[2]);
-    });
-    aveDistance[0] /= hands.length;
-    aveDistance[1] /= hands.length;
-    aveDistance[2] /= hands.length;
-    return aveDistance;
-  }
-  
-  function length(arr) {
-    var sum = 0;
-    arr.forEach(function (v) {
-      sum += v * v;
-    });
-    return Math.sqrt(sum);
-  }
-  
-  function dist(arr1, arr2) {
-    var sum = 0;
-    arr1.forEach(function (v, i) {
-      var d = v - arr2[i];
-      sum += d * d;
-    });
-    return Math.sqrt(sum);
-  }
-  
-  function getFinger(hand, type) {
-    var fs = hand.fingers;
-    for (var i = 0; i < fs.length; i++) {
-      var f = fs[i];
-      if (f.type == type) return f;
-    }
   }
 
   function LowPassFilter(cutoff, size) {
