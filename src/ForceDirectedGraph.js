@@ -107,6 +107,8 @@ var ForceDirectedGraph;
     var graph = new DotGraph(ast);
     graph.walk();
     
+    console.log(graph);
+    
     for (var k in graph.nodes) {
       nodes[k] = NID++;
       nodeArr.push(graph.nodes[k].attrs.label || k);
@@ -375,7 +377,7 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 100 }
+        strength: { type: 'f', value: 200 }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
@@ -456,7 +458,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.005 },
+        density: { type: 'f', value: 0.001 },
         texture1: { type: 't', value: null }
       },
       transparent: true,

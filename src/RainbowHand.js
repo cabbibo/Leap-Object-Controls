@@ -7,7 +7,9 @@
     this.cGeo = connectionGeo || new THREE.CylinderGeometry( this.size / 40 , this.size / 40 , 1 , 100);
     this.jGeo = jointGeo || new THREE.IcosahedronGeometry( this.size / 30 , 3 );
     this.pGeo = palmGeo || new THREE.CylinderGeometry( this.size / 10 , this.size / 10 , 1 , 100);
-    this.material = new THREE.MeshNormalMaterial({ shading: THREE.SmoothShading });
+    //this.material = new THREE.MeshNormalMaterial({ shading: THREE.SmoothShading });
+    this.material = new THREE.MeshBasicMaterial({ color:0xbada55, shading: THREE.SmoothShading });
+    
 
     this.connections  = [];
     this.joints       = [];

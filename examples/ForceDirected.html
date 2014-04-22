@@ -86,7 +86,7 @@
               vec4 oPos = texture2D(tPosition, vec2(x, y));
               vec3 diff = pos.xyz - oPos.xyz;
               float a = length(diff) + 10.;
-              f += oPos.a * diff / pow(a, 2.5);
+              f += oPos.a * diff / pow(a, 2.8);
             }
           }
         }
@@ -154,8 +154,8 @@
               // console.log(e.target.result)
               world.position.set(0,0,0);
               graph.reset();
-              graph.parseDot(e.target.result);
-              // graph.parseGrp(e.target.result);
+              // graph.parseDot(e.target.result);
+              graph.parseGrp(e.target.result);
             }
             reader.readAsText(file);
           }
@@ -193,7 +193,7 @@
       controls = new THREE.LeapClutchControls(world, controller);
       // controls = new THREE.TrackballControls( camera );
 
-      rainbowHand = new RainbowHand( controller );
+      rainbowHand = new RainbowHand( controller, 10 );
       scene.add( rainbowHand.object );
 
 

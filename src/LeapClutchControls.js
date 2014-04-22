@@ -6,20 +6,25 @@
 
 (function () {
   var PI_2 = Math.PI * 2;
+
   var X_AXIS = new THREE.Vector3(1, 0, 0);
   var Y_AXIS = new THREE.Vector3(0, 1, 0);
   var Z_AXIS = new THREE.Vector3(0, 0, 1);
-  var STATE_TRANSLATE = 0;
-  var STATE_ROTATE = 1;
-  var STATE_SCALE = 2;
   
   THREE.LeapClutchControls = function (object, controller, invert) {
+    
+    this.cameraModel = new Camera(object);
+    var transModulle = new TranslationModule();
+    var rotModule = new RotationModule();
+    this.cameraModel.addModule(transModulle);
+    this.cameraModel.addModule(rotModule);
+    
     this.object = object;
     this.controller = controller;
     this.invert = (invert === undefined ? false : invert);
     this.anchorDelta = 1;
     
-    this.translationSpeed = .2;
+    this.translationSpeed = 3.8;
     this.translationDecay = 0.8;
     this.scaleDecay = 0.5;
     this.rotationSlerp = 0.8;
@@ -33,13 +38,12 @@
     this.matrix = new THREE.Matrix4();
     this.quaternion = new THREE.Quaternion();
     this.quaternion2 = new THREE.Quaternion();
-    this.rotationMomentum = new THREE.Quaternion();
     this.translationMomentum = new THREE.Vector3();
     this.scaleMomentum = new THREE.Vector3(1, 1, 1);
     this.rotationMomentum = this.object.quaternion.clone();
     this.transLP = new LowPassFilter(this.transSmoothing, 3);
     this.rotLP = new LowPassFilter(this.rotationSmoothing, 3);
-    this.state = STATE_TRANSLATE;
+
   }
   
   var Proto = THREE.LeapClutchControls.prototype;
@@ -58,7 +62,6 @@
       return;
     }
     
-    this.updateState(frame);
     
     // match hands to anchors
     var rawHands = frame.hands;
@@ -91,30 +94,8 @@
         this.applyScale(anchorHands, hands);
       }
     }
-    
-    this.object.position.add(this.translationMomentum);
-    this.translationMomentum.multiplyScalar(this.translationDecay);
 
-    this.object.quaternion.slerp(this.rotationMomentum, this.rotationSlerp);
-    this.object.quaternion.normalize();
-
-    this.object.scale.lerp(this.scaleMomentum, this.scaleDecay);
-  }
-  
-  Proto.updateState = function (frame) {
-    // var hands = frame.hands;
-    // if (hands.length <= 0) {
-    //   this.state = STATE_TRANSLATE;
-    // } else if (frame.hands.length == 2) {
-    //   if (frame.hands[1].roll() > 0.5) {
-    //     this.state = STATE_ROTATE;
-    //   } else if (frame.hands[1].roll() < -0.5) {
-    //     this.state = STATE_SCALE;
-    //   } else {
-    //     this.state = STATE_TRANSLATE;
-    //   }
-    // }
-    // console.log(this.state)
+    this.cameraModel.step();
   }
   
   Proto.shouldTranslate = function (anchorHands, hands) {
@@ -141,13 +122,11 @@
     translation = this.transLP.sample(translation);
     
     this.vector.fromArray(translation);
-    if (this.invert) {
-      this.vector.negate();
-    }
     this.vector.multiplyScalar(this.translationSpeed);
-    // this.quaternion.copy(this.object.quaternion).inverse()
-    // this.vector.applyQuaternion(this.quaternion);
-    this.translationMomentum.add(this.vector);
+    this.vector.negate();
+
+     
+    this.cameraModel.update({velocity: this.vector});
   }
   
   Proto.applyRotation = function (anchorHands, hands) {
@@ -155,29 +134,8 @@
     rotation = this.rotLP.sample(rotation);
     this.vector.fromArray(rotation);
     this.vector.multiplyScalar(this.rotationSpeed);
-    if (this.invert) {
-      this.vector.negate();
-    }
-
-    this.vector2.copy(X_AXIS);
-    this.quaternion2.copy(this.object.quaternion).inverse();
-    this.vector2.applyQuaternion(this.quaternion2);
-    this.quaternion.setFromAxisAngle(this.vector2, this.vector.x);
-    this.rotationMomentum.multiply(this.quaternion);
-
-    this.vector2.copy(Y_AXIS);
-    this.quaternion2.copy(this.object.quaternion).inverse();
-    this.vector2.applyQuaternion(this.quaternion2);
-    this.quaternion.setFromAxisAngle(this.vector2, this.vector.y);
-    this.rotationMomentum.multiply(this.quaternion);
-
-    this.vector2.copy(Z_AXIS);
-    this.quaternion2.copy(this.object.quaternion).inverse();
-    this.vector2.applyQuaternion(this.quaternion2);
-    this.quaternion.setFromAxisAngle(this.vector2, this.vector.z);
-    this.rotationMomentum.multiply(this.quaternion);
-  
-    this.rotationMomentum.normalize();
+    this.vector.negate();
+    this.cameraModel.update({rotation: this.vector});
   }
   
   Proto.applyScale = function (anchorHands, hands) {
@@ -365,6 +323,7 @@
     var isArray = size > 1;
     var accumulator = isArray ? fill(new Array(size), 0) : 0;
     this.sample = isArray ? sampleArr : sampleSca;
+    
     
     this.setCutoff = function (value) {
       cutoff = value;

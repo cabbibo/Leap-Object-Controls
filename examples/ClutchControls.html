@@ -18,6 +18,7 @@
   <div id="container"></div>
   <script src="../lib/three.js"></script>
   <script src="../lib/leap.min.js"></script>
+  <script src="../src/camera.js"></script>
   <script src="../src/LeapClutchControls.js"></script>
     
   <script>
@@ -117,7 +118,7 @@
     // .use('handEntry')
     // .use('riggedHand', {parent: scene, scale: 2, materialOptions: {wireframe: false}});
         
-    controls = new THREE.LeapClutchControls( world , controller );
+    controls = new THREE.LeapClutchControls( camera , controller );
 
     var material = new THREE.MeshNormalMaterial();
 
