@@ -7,22 +7,16 @@
 (function () {
   var PI_2 = Math.PI * 2;
   
-  THREE.LeapClutchControls = function (object, controller) {
-    
-    this.cameraModel = new Camera(object);
-    var transModule = new TranslationModule();
-    var rotModule = new RotationModule();
-    this.cameraModel.addModule(transModule);
-    this.cameraModel.addModule(rotModule);
-    // transModule.friction = 0.01;
+  THREE.LeapClutchControls = function (object, controller, cameraModel) {
     
     this.object = object;
     this.controller = controller;
+    this.cameraModel = cameraModel;
     this.anchorDelta = 1;
     
-    this.translationSpeed = 3.8;
-    this.rotationSpeed = 2;
-    this.pinchThreshold = 0.4;
+    this.translationSpeed = 1;
+    this.rotationSpeed = 1;
+    this.pinchThreshold = 0.5;
     this.transSmoothing = 0.8;
     this.rotationSmoothing = 0.2;
     
@@ -98,7 +92,7 @@
     this.vector.fromArray(translation);
     this.vector.multiplyScalar(this.translationSpeed);
     this.vector.negate();
-    this.cameraModel.update({velocity: this.vector});
+    this.cameraModel.update({velocity: this.vector, friction: 0.2});
   }
   
   Proto.applyRotation = function (anchorHands, hands) {

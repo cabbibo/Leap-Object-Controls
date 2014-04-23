@@ -1,5 +1,7 @@
 var Camera, TranslationModule, RotationModule;
+
 (function () {
+  
   var X_AXIS = new THREE.Vector3(1, 0, 0);
   var Y_AXIS = new THREE.Vector3(0, 1, 0);
   var Z_AXIS = new THREE.Vector3(0, 0, 1);
@@ -93,6 +95,24 @@ var Camera, TranslationModule, RotationModule;
       }
       if (values.position) {
         this.position.copy(values.position).applyQuaternion(this.threeCam.quaternion);
+      }
+      if (values.friction) {
+        this.friction = values.friction;
+      }
+      if (values.acceleration_delta) {
+        tmpVec.copy(values.acceleration_delta).applyQuaternion(this.threeCam.quaternion);
+        this.acceleration.add(tmpVec)
+      }
+      if (values.velocity_delta) {
+        tmpVec.copy(values.velocity_delta).applyQuaternion(this.threeCam.quaternion);
+        this.velocity.add(tmpVec);
+      }
+      if (values.position_delta) {
+        tmpVec.copy(values.position_delta).applyQuaternion(this.threeCam.quaternion);
+        this.position.copy(tmpVec);
+      }
+      if (values.friction_delta) {
+        this.friction += values.friction_delta;
       }
     },
     

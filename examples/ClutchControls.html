@@ -20,6 +20,7 @@
   <script src="../lib/leap.min.js"></script>
   <script src="../src/camera.js"></script>
   <script src="../src/LeapClutchControls.js"></script>
+  <script src="../src/LeapPaddleControls.js"></script>
     
   <script>
 
@@ -118,7 +119,14 @@
     // .use('handEntry')
     // .use('riggedHand', {parent: scene, scale: 2, materialOptions: {wireframe: false}});
         
-    controls = new THREE.LeapClutchControls( camera , controller );
+    cameraModel = new Camera(camera);
+    var transModule = new TranslationModule();
+    var rotModule = new RotationModule();
+    cameraModel.addModule(transModule);
+    cameraModel.addModule(rotModule);
+    
+    controls1 = new THREE.LeapClutchControls( camera , controller, cameraModel );
+    controls2 = new THREE.LeapPaddleControls( camera , controller, cameraModel );
 
     var material = new THREE.MeshNormalMaterial();
 
@@ -188,7 +196,8 @@
 
   function animate(){
 
-    controls.update();
+    controls1.update();
+    controls2.update();
     updateHands();
     renderer.render( scene , camera );
 

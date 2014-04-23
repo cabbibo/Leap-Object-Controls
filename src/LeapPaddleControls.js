@@ -5,11 +5,12 @@
  *
  */
 
-THREE.LeapPaddleControls = function ( object , controller , params , domElement ) {
+THREE.LeapPaddleControls = function ( object , controller, cameraModel ) {
 
   this.object     = object;
   this.controller = controller;
-  this.domElement = ( domElement !== undefined ) ? domElement : document;
+  
+  this.cameraModel = cameraModel;
 
   // API
   
@@ -17,18 +18,18 @@ THREE.LeapPaddleControls = function ( object , controller , params , domElement 
 
   this.velocity = new THREE.Vector3();
 
-  this.weakDampening = .99;
-  this.strongDampening = .9;
+  this.weakDampening = .015;
+  this.strongDampening = .1;
 
   this.dampening = this.strongDampening;
   
   // Tells you how much the matching of direction matters
-  this.directionStrength = 4;
+  this.directionStrength = 10;
 
   // Tells you how much the power should be augmented
   // keep in mind that a higher power means a higher turn on
   this.power = 1;
-  this.divisionFactor = 500;
+  this.divisionFactor = 400;
 
   this.maxVelocity = 10;
 
@@ -98,7 +99,7 @@ THREE.LeapPaddleControls = function ( object , controller , params , domElement 
         var y = Math.abs( preVel.y );
         var z = Math.abs( preVel.z );
 
-
+        this.velocity.set(0, 0, 0);
         this.velocity.x -= signX * Math.pow( x , this.power ) / this.divisionFactor;
         this.velocity.y -= signY * Math.pow( y , this.power ) / this.divisionFactor;
         this.velocity.z -= signZ * Math.pow( z , this.power ) / this.divisionFactor;
@@ -111,21 +112,25 @@ THREE.LeapPaddleControls = function ( object , controller , params , domElement 
            this.velocity.normalize().multiplyScalar( this.maxVelocity );
 
         }
-
+        
+        this.cameraModel.update({velocity_delta: this.velocity, friction: this.dampening});
       }
 
+      
+      // console.log(this.velocity)
       // Convert from straight X , Y , Z,
       // to the X , Y , and Z of the camera
-      var vTemp = this.velocity.clone();
-      vTemp.applyQuaternion( this.object.quaternion );
-      this.object.position.add( vTemp );
-
-      this.velocity.multiplyScalar( this.dampening );
+      // var vTemp = this.velocity.clone();
+      // vTemp.applyQuaternion( this.object.quaternion );
+      // this.object.position.add( vTemp );
+      
+      // this.velocity.multiplyScalar( 1 - this.dampening );
 
     }
 
     
 
+    this.cameraModel.step();
   }
 
 }
