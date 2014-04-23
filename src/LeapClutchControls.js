@@ -14,7 +14,7 @@
     this.cameraModel = cameraModel;
     this.anchorDelta = 1;
     
-    this.translationSpeed = 1;
+    this.translationSpeed = 2;
     this.rotationSpeed = 1;
     this.pinchThreshold = 0.5;
     this.transSmoothing = 0.8;
@@ -67,8 +67,6 @@
         this.applyRotation(anchorHands, hands);
       }
     }
-
-    this.cameraModel.step();
   }
   
   Proto.shouldTranslate = function (anchorHands, hands) {
@@ -101,7 +99,8 @@
     this.vector.fromArray(rotation);
     this.vector.multiplyScalar(this.rotationSpeed);
     this.vector.negate();
-    this.cameraModel.update({rotation: this.vector});
+    // this.cameraModel.update({rotation: this.vector});
+    this.cameraModel.update({orbit: this.vector});
   }
   
   Proto.getTranslation = function(anchorHands, hands) {

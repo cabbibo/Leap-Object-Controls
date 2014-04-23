@@ -127,10 +127,6 @@ THREE.LeapPaddleControls = function ( object , controller, cameraModel ) {
       // this.velocity.multiplyScalar( 1 - this.dampening );
 
     }
-
-    
-
-    this.cameraModel.step();
   }
 
 }

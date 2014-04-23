@@ -109,8 +109,8 @@
     pointLight.position = new THREE.Vector3(-20, 10, 0);
     pointLight.lookAt(new THREE.Vector3(0, 0, 0));
     scene.add(pointLight);
-    camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 5000);
-    camera.position.z = 30;
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
+    camera.position.z = 300;
     console.log( camera );
         
 
@@ -122,8 +122,10 @@
     cameraModel = new Camera(camera);
     var transModule = new TranslationModule();
     var rotModule = new RotationModule();
+    var orbModule = new OrbitModule();
     cameraModel.addModule(transModule);
-    cameraModel.addModule(rotModule);
+    // cameraModel.addModule(rotModule);
+    cameraModel.addModule(orbModule);
     
     controls1 = new THREE.LeapClutchControls( camera , controller, cameraModel );
     controls2 = new THREE.LeapPaddleControls( camera , controller, cameraModel );
@@ -167,7 +169,8 @@
     }
 
     var material = new THREE.MeshNormalMaterial();
-    var geometry = new THREE.CubeGeometry( 20 , 20 , 20 );
+    // var geometry = new THREE.CubeGeometry( 20 , 20 , 20 );
+    var geometry = new THREE.SphereGeometry( 20 , 20 , 20 );
     for( var i = 0; i < 100; i ++ ){
 
       var mesh = new THREE.Mesh( geometry , material );
@@ -198,6 +201,7 @@
 
     controls1.update();
     controls2.update();
+    cameraModel.step();
     updateHands();
     renderer.render( scene , camera );
 

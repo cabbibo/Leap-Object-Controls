@@ -1,4 +1,4 @@
-var Camera, TranslationModule, RotationModule;
+var Camera, TranslationModule, RotationModule, OrbitModule;
 
 (function () {
   
@@ -13,24 +13,26 @@ var Camera, TranslationModule, RotationModule;
   var tmpQuat2 = new THREE.Quaternion();
   
   var tmpState = {
-    position: new THREE.Vector3(0, 0, 0),
-    lookAt: new THREE.Vector3(0, 0, -1),
-    up: new THREE.Vector3(0, 1, 0)
+    position: new THREE.Vector3(),
+    lookAt: new THREE.Vector3(),
+    up: new THREE.Vector3()
   };
   
   var tmpState2 = {
-    position: new THREE.Vector3(0, 0, 0),
-    lookAt: new THREE.Vector3(0, 0, -1),
-    up: new THREE.Vector3(0, 1, 0)
+    position: new THREE.Vector3(),
+    lookAt: new THREE.Vector3(),
+    up: new THREE.Vector3()
   };
   
   Camera = function Camera(threeCam) {
     this.threeCam = threeCam;
     this.state = {
       position: new THREE.Vector3(0, 0, 0),
-      lookAt: new THREE.Vector3(0, 0, -1),
+      lookAt: new THREE.Vector3(0, 0, 0),
       up: new THREE.Vector3(0, 1, 0)
     };
+    this.threeCam.lookAt(this.state.lookAt);
+    this.state.position.copy(this.threeCam.position);
     this.modules = [];
   }
 
@@ -41,6 +43,7 @@ var Camera, TranslationModule, RotationModule;
     },
   
     update: function (values) {
+      // debugger
       copyState(tmpState, this.state);
       
       for (var i = 0; i < this.modules.length; i++) {
@@ -117,6 +120,7 @@ var Camera, TranslationModule, RotationModule;
     },
     
     step: function (state, diffout) {
+      this.position.copy(state.position);
       this.velocity.multiplyScalar(1 - this.friction);
       addMult(this.velocity, this.acceleration, 0.1);
       addMult(this.position, this.velocity, 0.1);
@@ -128,25 +132,62 @@ var Camera, TranslationModule, RotationModule;
     }
   };
   
-  var OrbitModule = function () {
-    
+  var sharedQuat = new THREE.Quaternion();
+  var sharedQuat2 = new THREE.Quaternion();
+  OrbitModule = function () {
+    // this.quaternion = new THREE.Quaternion();
+    this.quaternion = sharedQuat;
+    // this.targetQuat = new THREE.Quaternion();
+    this.targetQuat = sharedQuat2;
+    this.lookAt = new THREE.Vector3();
+    this.up = new THREE.Vector3();
   };
   
   OrbitModule.prototype = {
     
-    init: function (state) {
+    init: function (state, camera) {
+      this.threeCam = camera;
+      this.quaternion.copy(camera.quaternion);
+      this.targetQuat.copy(camera.quaternion);
+      this.lookAt.copy(state.position).sub(state.lookAt);
+      this.up.copy(state.up);
     },
     
     update: function (values, state) {
+      if (values.orbit) {
+        console.log('update orbit')
+        var rotation = values.orbit;
+
+        tmpQuat.setFromAxisAngle(X_AXIS, rotation.x);
+        this.targetQuat.multiply(tmpQuat);
+        
+        tmpQuat.setFromAxisAngle(Y_AXIS, rotation.y);
+        this.targetQuat.multiply(tmpQuat);
+        
+        tmpQuat.setFromAxisAngle(Z_AXIS, rotation.z);
+        this.targetQuat.multiply(tmpQuat);
+        
+        this.targetQuat.normalize();
+      }
     },
     
-    step: function (state) {
+    step: function (state, diffout) {
+      this.quaternion.slerp(this.targetQuat, 0.1);
+      
+      tmpVec.copy(this.lookAt).applyQuaternion(this.quaternion);
+      tmpVec2.subVectors(state.position, state.lookAt);
+      diffout.position.subVectors(tmpVec, tmpVec2);
+      
+      tmpVec.copy(this.up).applyQuaternion(this.quaternion);
+      diffout.up.subVectors(tmpVec, state.up);
     }
   };
   
   RotationModule = function () {
     this.quaternion = new THREE.Quaternion();
+    // this.quaternion = sharedQuat;
     this.targetQuat = new THREE.Quaternion();
+    // this.targetQuat = sharedQuat2;
     this.lookAt = new THREE.Vector3();
     this.up = new THREE.Vector3();
   };
@@ -167,16 +208,21 @@ var Camera, TranslationModule, RotationModule;
 
         tmpQuat.setFromAxisAngle(X_AXIS, rotation.x);
         this.targetQuat.multiply(tmpQuat);
+        
         tmpQuat.setFromAxisAngle(Y_AXIS, rotation.y);
         this.targetQuat.multiply(tmpQuat);
+        
         tmpQuat.setFromAxisAngle(Z_AXIS, rotation.z);
         this.targetQuat.multiply(tmpQuat);
         
         this.targetQuat.normalize();
+
+        // this.lookAt.copy(state.lookAt).sub(state.position);
       }
     },
     
     step: function (state, diffout) {
+      // this.quaternion.copy(this.threeCam.quaternion);
       this.quaternion.slerp(this.targetQuat, 0.1);
       
       tmpVec.copy(this.lookAt).applyQuaternion(this.quaternion);
