@@ -71,7 +71,7 @@
   
   Proto.shouldTranslate = function (anchorHands, hands) {
     var isEngaged = this.isEngaged.bind(this);
-    return hands.some(isEngaged);
+    return hands.length < 2 && hands.some(isEngaged);
   }
   
   Proto.shouldRotate = function (anchorHands, hands) {
@@ -90,7 +90,7 @@
     this.vector.fromArray(translation);
     this.vector.multiplyScalar(this.translationSpeed);
     this.vector.negate();
-    this.cameraModel.update({velocity: this.vector, friction: 0.2});
+    this.cameraModel.update({velocity: this.vector});
   }
   
   Proto.applyRotation = function (anchorHands, hands) {

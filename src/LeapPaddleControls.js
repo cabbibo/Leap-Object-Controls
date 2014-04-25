@@ -108,12 +108,10 @@ THREE.LeapPaddleControls = function ( object , controller, cameraModel ) {
 
         // Making sure we don't Freak out!
         if( l >= this.maxVelocity ){
-
            this.velocity.normalize().multiplyScalar( this.maxVelocity );
-
         }
         
-        this.cameraModel.update({velocity_delta: this.velocity, friction: this.dampening});
+        this.cameraModel.update({velocity: this.velocity});
       }
 
       

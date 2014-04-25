@@ -120,12 +120,10 @@
     // .use('riggedHand', {parent: scene, scale: 2, materialOptions: {wireframe: false}});
         
     cameraModel = new Camera(camera);
-    var transModule = new TranslationModule();
-    var rotModule = new RotationModule();
-    var orbModule = new OrbitModule();
-    cameraModel.addModule(transModule);
+    // var transModule = new TranslationModule();
+    // var rotModule = new RotationModule();
+    // cameraModel.addModule(transModule);
     // cameraModel.addModule(rotModule);
-    cameraModel.addModule(orbModule);
     
     controls1 = new THREE.LeapClutchControls( camera , controller, cameraModel );
     controls2 = new THREE.LeapPaddleControls( camera , controller, cameraModel );
