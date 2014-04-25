@@ -66,6 +66,11 @@
       if (this.shouldRotate(anchorHands, hands)) {
         this.applyRotation(anchorHands, hands);
       }
+      
+      // scale
+      if (this.shouldScale(anchorHands, hands)) {
+        this.applyScale(anchorHands, hands);
+      }
     }
   }
   
@@ -75,6 +80,11 @@
   }
   
   Proto.shouldRotate = function (anchorHands, hands) {
+    var isEngaged = this.isEngaged.bind(this);
+    return hands.length >= 2 && hands.every(isEngaged) && anchorHands.every(isEngaged);
+  }
+  
+  Proto.shouldScale = function (anchorHands, hands) {
     var isEngaged = this.isEngaged.bind(this);
     return hands.length >= 2 && hands.every(isEngaged) && anchorHands.every(isEngaged);
   }
@@ -90,7 +100,7 @@
     this.vector.fromArray(translation);
     this.vector.multiplyScalar(this.translationSpeed);
     this.vector.negate();
-    this.cameraModel.update({velocity: this.vector});
+    this.cameraModel.translate(this.vector, true);
   }
   
   Proto.applyRotation = function (anchorHands, hands) {
@@ -99,8 +109,13 @@
     this.vector.fromArray(rotation);
     this.vector.multiplyScalar(this.rotationSpeed);
     this.vector.negate();
-    // this.cameraModel.update({rotation: this.vector});
-    this.cameraModel.update({orbit: this.vector});
+    // this.cameraModel.rotate(this.vector, true);
+    this.cameraModel.orbit(this.vector, true);
+  }
+  
+  Proto.applyScale = function (anchorHands, hands) {
+    var scale = this.getScale(anchorHands, hands);
+    this.cameraModel.scale((1 - scale[3]), false);
   }
   
   Proto.getTranslation = function(anchorHands, hands) {
@@ -148,6 +163,25 @@
     return [dx * am[0], dy * am[1], dz * am[2]];
   }
   
+  Proto.getScale = function(anchorHands, hands) {
+    if (hands.length < 2 || anchorHands.length < 2) {
+      return [1, 1, 1, 1];
+    }
+    
+    var centerAnchor = getCenter(anchorHands);
+    var centerCurrent = getCenter(hands);
+    var aveRadiusAnchor = aveDistance(centerAnchor, anchorHands);
+    var aveRadiusCurrent = aveDistance(centerCurrent, hands);
+    
+    // scale of current over previous
+    return [
+      aveRadiusCurrent[0] / aveRadiusAnchor[0],
+      aveRadiusCurrent[1] / aveRadiusAnchor[1],
+      aveRadiusCurrent[2] / aveRadiusAnchor[2],
+      length(aveRadiusCurrent) / length(aveRadiusAnchor)
+    ];
+  }
+  
   Proto.isEngaged = function(h) {
     return h && (h.pinchStrength > this.pinchThreshold);
   }
@@ -167,6 +201,28 @@
       z += hand.palmPosition[2];
     });
     return [x/l, y/l, z/l];
+  }
+  
+  function aveDistance(center, hands) {
+    var aveDistance = [0, 0, 0];
+    hands.forEach(function (hand) {
+      var p = hand.palmPosition;
+      aveDistance[0] += Math.abs(p[0] - center[0]);
+      aveDistance[1] += Math.abs(p[1] - center[1]);
+      aveDistance[2] += Math.abs(p[2] - center[2]);
+    });
+    aveDistance[0] /= hands.length;
+    aveDistance[1] /= hands.length;
+    aveDistance[2] /= hands.length;
+    return aveDistance;
+  }
+  
+  function length(arr) {
+    var sum = 0;
+    arr.forEach(function (v) {
+      sum += v * v;
+    });
+    return Math.sqrt(sum);
   }
 
   function getAngles(hands) {

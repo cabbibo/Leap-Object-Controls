@@ -111,7 +111,7 @@ THREE.LeapPaddleControls = function ( object , controller, cameraModel ) {
            this.velocity.normalize().multiplyScalar( this.maxVelocity );
         }
         
-        this.cameraModel.update({velocity: this.velocity});
+        this.cameraModel.translate(this.velocity, true);
       }
 
       
