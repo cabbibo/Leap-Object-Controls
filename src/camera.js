@@ -223,6 +223,26 @@ var LeapCameraControls, Activations, Interpreters, Mappings, Control;
       return f;
     },
     
+    toVecComp: function (action, from, to) {
+      from = from || 'x';
+      to = to || 'x';
+      
+      var f = function (value) {
+        if (typeof(value) == 'number') {
+          this.vec.set(0, 0, 0);
+          this.vec[to] = value;
+        } else {
+          tmpVec.copy(value);
+          this.vec.set(0, 0, 0);
+          this.vec[to] = tmpVec[from];
+        }
+        
+        return this.vec;
+      }
+      f.action = action;
+      return f;
+    },
+    
     toScalar: function (action, component) {
       component = component || 'x';
       var f = function (value) {
@@ -252,11 +272,36 @@ var LeapCameraControls, Activations, Interpreters, Mappings, Control;
       return activation;
     },
     
-    inversePinch: function (which, multiplier) {
-      // var pinch = Activations.pinch(which, multiplier);
-      // return function (hands, anchorHands) {
-      //   return 1 - pinch();
-      // }
+    paddle: function (which, multiplier) {
+      function activation(hands, anchorHands) {
+        var hand;
+        for (var i = 0; i < hands.length; i++) {
+          if (hands[i].type == which) {
+            hand = hands[i];
+            break;
+          }
+        }
+        if (hand) {
+          var v = normalize(hand.palmVelocity);
+          return Math.max(0, dot(hand.palmNormal, v)) * activation.multiplier;
+        }
+        return 0;
+      }
+      activation.multiplier = multiplier;
+      return activation;
+    },
+    
+    clap: function (multiplier) {
+      function activation(hands, anchorHands) {
+        var hand1 = hands[0];
+        var hand2 = hands[1];
+        if (hand1 && hand2) {
+          return (1 - dot(hand1.palmNormal, hand2.palmNormal)) * activation.multiplier;
+        }
+        return 0;
+      }
+      activation.multiplier = multiplier;
+      return activation;
     }
   }
   
@@ -341,7 +386,7 @@ var LeapCameraControls, Activations, Interpreters, Mappings, Control;
   function prepareFrame(controller) {
     var frame = controller.frame();
     var anchorFrame = controller.frame(1);
-  
+    
     var hands = [];
     var anchorHands = [];
     this.hands = hands;
@@ -351,11 +396,11 @@ var LeapCameraControls, Activations, Interpreters, Mappings, Control;
     if (!frame || !frame.valid || !anchorFrame || !anchorFrame.valid) {
       return;
     }
-  
+    
     // match hands to anchors
     var rawHands = frame.hands;
     var rawAnchorHands = anchorFrame.hands;
-  
+    
     rawHands.forEach(function (hand, hIdx) {
       var anchorHand = anchorFrame.hand(hand.id);
       if (anchorHand.valid) {
@@ -372,7 +417,7 @@ var LeapCameraControls, Activations, Interpreters, Mappings, Control;
     if (l == 0) {
       return [0, 0, 0];
     } else if (l == 1) {
-      return useIb ? hand.frame.interactionBox.center : hands[0].palmPosition;
+      return useIb ? hands[0].frame.interactionBox.center : hands[0].palmPosition;
     }
     
     var x = y = z = 0;
@@ -456,5 +501,14 @@ var LeapCameraControls, Activations, Interpreters, Mappings, Control;
     var az = dy * dy + dx * dx;
   
     return [ax, ay, az, mag];
+  }
+  
+  function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  }
+  
+  function normalize(a) {
+    var s = Math.sqrt(dot(a, a));
+    return [a[0]/s, a[1]/s, a[2]/s];
   }
 }());

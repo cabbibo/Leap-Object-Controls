@@ -97,7 +97,7 @@ var SimulatorRenderer;
 		var rt2 = rt0.clone();
 
 		this.copyTexture(generateDataTexture(0), rt0);
-    this.copyTexture(generateDataTexture(15.65), rt1);
+    this.copyTexture(generateDataTexture(15.62), rt1);
     
     var flipflop = 0, renderCount = 0.001;
     this.simulate = function () {

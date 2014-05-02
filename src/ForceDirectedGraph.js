@@ -11,6 +11,8 @@ var ForceDirectedGraph;
     this.posFS = posFS;
     this.highlightPos = new THREE.Vector3();
     this.inited = false;
+    this.vertexForce = 400;
+    this.edgeForce = 0.001;
 
     // For Text
     this.textNodes = [];
@@ -68,36 +70,6 @@ var ForceDirectedGraph;
     this.inited = true;
   }
 
-  // Proto.parseDot = function (dotStr) {
-  //   var NID = 0;
-  //   var nodes = {};
-  //   var nodeArr = [];
-  //   var edges = [];
-  // 
-  //   // var regex = /\s*"?([^"]*?)"?\s*-[>-]\s*"?([^"]*?)"?/g;
-  //   var regex = /\s*"?(\w*)"?\s*-[>-]\s*"?(\w*)"?/g;
-  //   var match;
-  //   while ((match = regex.exec(dotStr)) !== null) {
-  //     var nid1 = nodes[match[1]];
-  //     if (nid1 == undefined) {
-  //       nodeArr.push({id: NID, text: match[1]});
-  //       nid1 = nodes[match[1]] = NID++;
-  //     }
-  //     var nid2 = nodes[match[2]];
-  //     if (nid2 == undefined) {
-  //       nodeArr.push({id: NID, text: match[2]});
-  //       nid2 = nodes[match[2]] = NID++;
-  //     }
-  //     edges.push(nid1, nid2);
-  //     // console.log(match[1], '*', match[2]);
-  //     // console.log(nid1, nid2);
-  //   }
-  //   console.log(NID);
-  //   this.init(nodeArr, edges);
-  //   // console.log(this.nodes)
-  //   // console.log(edges)
-  // }
-
   Proto.parseDot = function (dotStr) {
     var NID = 0;
     var nodes = {};
@@ -106,8 +78,6 @@ var ForceDirectedGraph;
     var ast = DotParser.parse(dotStr);
     var graph = new DotGraph(ast);
     graph.walk();
-    
-    console.log(graph);
     
     for (var k in graph.nodes) {
       nodes[k] = NID++;
@@ -377,7 +347,7 @@ var ForceDirectedGraph;
       uniforms: {
         tPosition: { type: "t", value: null },
         tForces: { type: "t", value: null },
-        strength: { type: 'f', value: 200 }
+        strength: { type: 'f', value: this.vertexForce }
       },
       vertexShader: vs,
       fragmentShader: fragmentShader
@@ -458,7 +428,7 @@ var ForceDirectedGraph;
       },
       uniforms: {
         firstVertex: { type: 'f', value: 1 },
-        density: { type: 'f', value: 0.001 },
+        density: { type: 'f', value: this.edgeForce },
         texture1: { type: 't', value: null }
       },
       transparent: true,
