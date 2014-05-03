@@ -468,21 +468,41 @@
     }
   </script>
   
-  <div style="position: absolute; top:0; left:20px; width: 400px;">
-    <h1 id="header">Force-Directed Graph</h1>
+  <div style="position: absolute; top:0; left:0px; padding:20px; width: 400px; background-color: rgba(0 , 0 , 0 ,.8);">
+    <h1 id="header" style="background:none;">Force-Directed Graph</h1>
     <div>
       <p>Here is a force-directed graph with forces calculated on the GPU.
         It's built using <a href="http://threejs.org/">three.js</a> and
         <a href="https://github.com/siefkenj/dotgraph">siefkenj's dotgraph parser</a>.  
       </p>
       <p>This is a graph of the leap motion tracking software's class inheritance structure.</p>
+      <p> 
+        To navigate through the scene, pinch and move the cameras position with your 
+        right hand, and pinch and move the target with your left hand.
+      </p>
+      <p>
+        To try out other magical camera controls ( or build your own ), check out:<br/>
+        <ul>
+          <li><a href="http://leapmotion.github.io/Leap-Three-Camera-Controls"> Leap Three Camera Control Tutorial </a></li>
+          <li><a href="http://github.com/leapmotion/Leap-Three-Camera-Controls"> Leap Three Camera Control Repo </a></li>
+        </ul>
+      </p>
+      
     </div>
-    <div style="margin-top: 50px;">
-      <p> Try some other graphs </p>
-      <a href="javascript:loadGrid()">Grid (1000)</a> <br/>
-      <a href="javascript:loadTree()">Tree (2047)</a> <br/>
-      <a href="javascript:loadNV()">nVidia call graph (11890)</a>
-      <p>load your own by drag-dropping a .dot file</p>
+    <div>
+      <p> <h3>Try some other graphs: </h3>
+      <a href="javascript:loadGrid()">Grid</a> ||
+      <a href="javascript:loadTree()">Tree</a> ||
+      <a href="javascript:loadNV()"> Call Graph </a></br>
+      OR load your own by drag-dropping a .dot file</p>
+    </div>
+    <div>
+      <p>
+        Questions , comments , hatemail ? <br/>
+        <a href="http://github.com/nashira">@Nashira</a>  ||  
+        <a href="http://twitter.com/cabbibo">@Cabbibo</a>
+      </p>
+      
     </div>
   </div>
 </body>
