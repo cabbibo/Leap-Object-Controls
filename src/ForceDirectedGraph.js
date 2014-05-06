@@ -294,7 +294,7 @@ var ForceDirectedGraph;
       uniforms: {
         map: {
           type: 't',
-          value: THREE.ImageUtils.loadTexture('../lib/round.png')
+          value: THREE.ImageUtils.loadTexture('lib/round.png')
         },
         size: {
           type: 'f',
