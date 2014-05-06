@@ -1,24 +1,4 @@
 <!DOCTYPE html>
-
-<!--
-
-  Hey There.
-
-  I see that you are examining the source.
-
-  Before you go  on, let me remind you of a few things:
-
-  First off,
-  This code is a hodgepodge pulled together to create a pretty demo.
-  It is not example code. 
-
-  If you do have questions about it, please contact
-
-  @Nashira on github , or @Cabbibo on twitter / github
-
-  k thnx ;)
-
--->
 <html lang="en">
 
 <head>
@@ -72,40 +52,15 @@
       top:0px;
     }
 
-    #socialLinks{
-        position:absolute;
-        right:10px;
-        bottom:10px;
-
-      }
-
     #socialLinks > a{
       display:inline-block;
       width: 25px;
       height: 25px;
+      margin: 5px;
       margin-top:-7px;
       float:right;
-      padding:5px;
-      margin:5px;
 
-      background:#333;
     }
-
-       #socialLinks > a > img {
-      
-        width:100%;
-        height:100%;
-        opacity:.7;
-        margin:0px;
-
-
-      }
-
-      #socialLinks > a:hover{
-        opacity:1;
-      }
-
-
   
     #header > div > a{
       background:#333;
@@ -149,23 +104,16 @@
 
     }
 
-    #info{
-      height:100%;
-      overflow:auto;
-
-    }
     .cameraControlGUI{
 
     }
     a{
       color:#fff;
       text-decoration:none;
-      opacity: .7;
     }
 
     a:hover{
       text-decoration:underline;
-      opacity:1;
     }
 
     ::-webkit-scrollbar {
@@ -194,12 +142,12 @@
 </head>
 
 <body>
-  <script src="lib/three.js"></script>
-  <script src="lib/Detector.js"></script>
-  <script src="lib/stats.min.js"></script>
-  <script src="lib/dat.gui.min.js"></script>
-  <script src="lib/dotgraph.js"></script>
-  <script src="lib/dotparser.js"></script>
+  <script src="../lib/three.js"></script>
+  <script src="../lib/Detector.js"></script>
+  <script src="../lib/stats.min.js"></script>
+  <script src="../lib/dat.gui.min.js"></script>
+  <script src="../lib/dotgraph.js"></script>
+  <script src="../lib/dotparser.js"></script>
 
   <script id="vertexShaderFDG" type="x-shader/x-vertex">
     uniform sampler2D texture1;
@@ -265,13 +213,11 @@
 
   </script>
 
-  <script src="lib/leap.min.js"></script>
-  <script src="src/ForceDirectedGraph.js"></script>
-  <script src="src/LeapUtils.js"></script>
-  <script src="src/TextCreator.js"></script>
-  <script src="src/camera.js"></script>
-  <script src="src/LeapSpringControls.js"></script>
-  <script src="src/LeapEyeLookControls.js"></script>
+  <script src="../lib/leap.min.js"></script>
+  <script src="../src/ForceDirectedGraph.js"></script>
+  <script src="../src/LeapUtils.js"></script>
+  <script src="../src/TextCreator.js"></script>
+  <script src="../src/camera.js"></script>
 
   <script>
     if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -328,18 +274,12 @@
       container = document.createElement('div');
       document.body.appendChild(container);
 
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 20000);
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
       camera.position.z = 1000;
 
       scene = new THREE.Scene();
       world = new THREE.Object3D();
       scene.add(world);
-
-      var map = THREE.ImageUtils.loadTexture( 'lib/simplexSphereMap.jpg' );
-      var geo = new THREE.SphereGeometry( 5000 , 50 , 50 );
-      var mat = new THREE.MeshBasicMaterial({map:map,side:THREE.BackSide});
-      skybox = new THREE.Mesh( geo , mat );
-      //scene.add( skybox );
 
       // Setting up Leap Variables
       controller = new Leap.Controller();
@@ -352,22 +292,9 @@
       // scene.add( gFingerMarker );
       // gFingerMarker.position = gFingerPos;
 
-      controls = new THREE.LeapEyeLookControls(camera, controller,scene);
-      controls.lookSpeed = 0.005;
-      controls.eyeSpeed = 0.005;
-
-      var mesh = new THREE.Mesh(
-        new THREE.IcosahedronGeometry( 10 , 1 ),
-        new THREE.MeshNormalMaterial({
-          transparent: true,
-          opacity: 1.5
-        })
-      );
-
-      console.log( controls );
-      controls.addLookMarker( mesh );
+      controls = new LeapCameraControls(camera, controller);
       // controls.decayTranslate = .99;
-      /*controls.add('pinchRotate', new Control(
+      controls.add('pinchRotate', new Control(
         Activations.pinch('left', .2),
         Interpreters.palmOrbit(),
         Mappings.toVec('orbit')));
@@ -375,7 +302,7 @@
       controls.add('pinchTrans', new Control(
         Activations.pinch('right', 4),
         Interpreters.palmPosition(),
-        Mappings.toVec('translate')));*/
+        Mappings.toVec('translate')));
 
       renderer = new THREE.WebGLRenderer();
       // _gl = renderer.context;
@@ -383,8 +310,6 @@
       renderer.setClearColor(0, 0);
       renderer.setSize(window.innerWidth, window.innerHeight);
 
-      window.addEventListener( 'resize' , onResize , false );
-      window.addEventListener( 'keypress' , onKeypress , false );
       container.appendChild(renderer.domElement);
 
       var vst = document.getElementById('vertexShaderFDG').textContent;
@@ -418,11 +343,7 @@
       graph.reset();
       graph.edgeForce = 0.01;
       graph.vertexForce = 150;
-      camera.position.z = 1000;
-
-      
-      controls.lookSpeed = .005;
-      controls.eyeSpeed = .005;
+      controls.cameraModel.position.z = 1000;
       var text = document.getElementById('inherit').textContent;
       graph.parseDot(text);
     }
@@ -433,11 +354,7 @@
       graph.reset();
       graph.edgeForce = 0.05;
       graph.vertexForce = 400;
-      camera.position.z = 2000;
-      
-      controls.lookSpeed = .01;
-      controls.eyeSpeed = .01;
-
+      controls.cameraModel.position.z = 2000;
       graph.init(1000, grid3(10, 10, 10));
     }
     
@@ -447,10 +364,7 @@
       graph.reset()
       graph.edgeForce = 0.05;
       graph.vertexForce = 400;
-      camera.position.z = 3000;
-
-      controls.lookSpeed = .02;
-      controls.eyeSpeed = .02;
+      controls.cameraModel.position.z = 3000;
       graph.init(2047, balancedTree(10, 2));
     }
     
@@ -461,11 +375,8 @@
 
       graph.edgeForce = 0.001;
       graph.vertexForce = 800;
-      camera.position.z = 2000;
-
-      
-      controls.lookSpeed = .02;
-      controls.eyeSpeed = .02;
+      controls.cameraModel.position.z = 2000;
+      controls.controls.pinchTrans.activation.magnitude = 100
       
       var text = document.getElementById('nvgraph').textContent;
       graph.parseGrp(text);
@@ -520,35 +431,13 @@
       return g;
     }
 
-    function onResize() {
-
+    function onWindowResize() {
       windowHalfX = window.innerWidth / 2;
       windowHalfY = window.innerHeight / 2;
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
-
-    function onKeypress(e){
-     
-      console.log( e.charCode );
-      if( e.charCode == 120 || e.charCode == 88){
-        toggleInfo();
-      }
-    }
-
-function toggleInfo(){
-
-   var info = document.getElementById( 'info' );
-
-        if( info.style.display != 'none' ){
-          info.style.display = 'none';
-        }else{
-          info.style.display = 'block';
-        }
-
-
-}
 
     function animate() {
       requestAnimationFrame(animate);
@@ -578,57 +467,35 @@ function toggleInfo(){
       scene.add(plane);
     }
   </script>
-
-  <div id="socialLinks" >
-    <a target="_blank" href="http://twitter.com/share?text=%20%23threejs%20%23GPGPU%20Force%20Directed%20Graph%20Navigable%20with%20@LeapMotion&url=http://leapmotion.github.io/Leap-Object-Controls/">
-        
-        <img src="lib/twitter.png"/>
-      </a>
-      <a target="_blank" href="http://www.facebook.com/sharer.php?u=http://leapmotion.github.io/Leap-Object-Controls/"><img src="lib/facebook.png"/></a>
-      <a target="_blank" href="https://github.com/leapmotion/Leap-Three-Camera-Controls"><img src="lib/github.png"/></a>
-      <a target="_blank" href="https://developer.leapmotion.com/"><img src="lib/leapmotion.png"/></a>
-
-  </div>
   
-  <div id="info" style="position: absolute; top:0; left:0px; padding:20px; width: 400px; background-color: rgba(0 , 0 , 0 ,.8);">
+  <div style="position: absolute; top:0; left:0px; padding:20px; width: 400px; background-color: rgba(0 , 0 , 0 ,.8);">
     <h1 id="header" style="background:none;">Force-Directed Graph</h1>
     <div>
-      <p> 
-      <a href="javascript:loadGrid()">Grid</a> ||
-      <a href="javascript:loadTree()">Tree</a> ||
-      <a href="javascript:loadNV()"> Call Graph </a> ||
-      <a href="javascript:loadInheritance()"> Inheritance </a> 
-      </p>
-      <p> Press 'X' to hide info</p>
-    </div>
       <p>Here is a force-directed graph with forces calculated on the GPU.
         It's built using <a href="http://threejs.org/">three.js</a> and
         <a href="https://github.com/siefkenj/dotgraph">siefkenj's dotgraph parser</a>.  
       </p>
-      <p>This is a graph of the Leap Motion tracking software's class inheritance structure.</p>
+      <p>This is a graph of the leap motion tracking software's class inheritance structure.</p>
       <p> 
-        If you have a Leap Motion controller,  navigate through the scene, pinch and move the 
-        cameras position with your right hand, and pinch and move the position you are looking
-        at with your left hand. Otherwise click and drag to rotate, and scroll to zoom!
+        To navigate through the scene, pinch and move the cameras position with your 
+        right hand, and pinch and move the target with your left hand.
       </p>
       <p>
-        To try out other camera controls ( or build your own ), check out:<br/>
+        To try out other magical camera controls ( or build your own ), check out:<br/>
         <ul>
           <li><a href="http://leapmotion.github.io/Leap-Three-Camera-Controls"> Leap Three Camera Control Tutorial </a></li>
           <li><a href="http://github.com/leapmotion/Leap-Three-Camera-Controls"> Leap Three Camera Control Repo </a></li>
         </ul>
       </p>
-     
-          <div>
-      <p> <h3>Other graphs: </h3>
+      
+    </div>
+    <div>
+      <p> <h3>Try some other graphs: </h3>
       <a href="javascript:loadGrid()">Grid</a> ||
       <a href="javascript:loadTree()">Tree</a> ||
-      <a href="javascript:loadNV()"> Call Graph </a> ||
-      <a href="javascript:loadInheritance()"> Inheritance </a> </br>
+      <a href="javascript:loadNV()"> Call Graph </a></br>
       OR load your own by drag-dropping a .dot file</p>
     </div>
-
-
     <div>
       <p>
         Questions , comments , hatemail ? <br/>

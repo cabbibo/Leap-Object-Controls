@@ -35,6 +35,19 @@ LeapUtils.leapToScene = function( position , frame , size ){
 }
 
 
+LeapUtils.leapToFrustum = function( position , frame , fov, near, far, result ){
+  result = result || new THREE.Vector3();
+  var nn = near / (far - near);
+  var normalized = frame.interactionBox.normalizePoint(position, false);
+  normalized[2] = Math.max(normalized[2], 0);
+  result.fromArray(normalized);
+  result.multiplyScalar(2).addScalar(-1);
+  var scaleZ = near + (far - near) * (1 - normalized[2]);
+  var theta = 2 * Math.atan(1/(2 * scaleZ));
+  result.multiplyScalar(100 + 1/theta);
+  result.setZ(-scaleZ);
+  return result;
+}
 /*
 
   Leap To DOM:
