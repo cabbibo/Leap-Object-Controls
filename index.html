@@ -270,6 +270,7 @@
   <script src="src/LeapUtils.js"></script>
   <script src="src/TextCreator.js"></script>
   <script src="src/camera.js"></script>
+  <script src="src/TrackballControls.js"></script>
   <script src="src/LeapSpringControls.js"></script>
   <script src="src/LeapEyeLookControls.js"></script>
 
@@ -278,6 +279,8 @@
 
     var container, stats;
     var camera, scene, renderer, particles, geometry, simulatorMaterial, parameters, i, h, color;
+
+    var fallbackControls;
 
     // Leap Variables to be used as uniforms for exploration
     var gFingerPos;    // vec3 for uniforms
@@ -355,6 +358,15 @@
       controls = new THREE.LeapEyeLookControls(camera, controller,scene);
       controls.lookSpeed = 0.005;
       controls.eyeSpeed = 0.005;
+
+
+
+      fallbackControls = new THREE.TrackballControls( camera );
+
+
+
+
+
 
       var mesh = new THREE.Mesh(
         new THREE.IcosahedronGeometry( 10 , 1 ),
@@ -558,6 +570,11 @@ function toggleInfo(){
     var isPaused = false;
     function render() {
       controls.update();
+
+      if( !controller.frame().valid ){
+        fallbackControls.update();
+      }
+
       rainbowHand && rainbowHand.update();
 
       if (graph.inited && !isPaused) {
