@@ -100,7 +100,7 @@
 		</script>
 
     <script src="../lib/leap.min.js"></script>
-    <script src="../src/LeapClutchControls.js"></script>
+    <script src="../src/camera.js"></script>
 		<script src="../src/SimulatorRenderer.js"></script>
 
 		<script>
@@ -137,15 +137,27 @@
 				document.body.appendChild( container );
 
 				camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 10, 10000 );
-				camera.position.z = 1000;
+				camera.position.z = 1500;
 
 				scene = new THREE.Scene();
         world = new THREE.Object3D();
         scene.add(world);
         
         controller = new Leap.Controller();
-        controls = new THREE.LeapClutchControls( world , controller );
         controller.connect();
+
+
+        controls = new LeapCameraControls(camera, controller);
+        // controls.decayTranslate = .99;
+        controls.add('pinchRotate', new Control(
+          Activations.pinch('left', .2),
+          Interpreters.palmOrbit(),
+          Mappings.toVec('orbit')));
+        
+        controls.add('pinchTrans', new Control(
+          Activations.pinch('right', 10),
+          Interpreters.palmPosition(),
+          Mappings.toVec('translate')));
 
 				geometry = getBufferParticleGeometry();
 
